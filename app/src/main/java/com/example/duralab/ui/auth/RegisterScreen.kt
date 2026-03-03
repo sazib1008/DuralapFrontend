@@ -68,7 +68,7 @@ fun RegisterScreen(
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(Slate50, Color.White)
+                    colors = listOf(MaterialTheme.colorScheme.surface, Color.White)
                 )
             )
     ) {
@@ -78,14 +78,14 @@ fun RegisterScreen(
                 .align(Alignment.TopEnd)
                 .offset(x = 64.dp, y = (-64).dp)
                 .size(128.dp)
-                .background(Blue200.copy(alpha = 0.4f), CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f), CircleShape)
                 .blur(32.dp)
         )
         Box(
             modifier = Modifier
                 .size(96.dp)
                 .offset(x = (-48).dp, y = 160.dp)
-                .background(Indigo50.copy(alpha = 0.5f), CircleShape)
+                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f), CircleShape)
                 .blur(24.dp)
         )
 
@@ -115,13 +115,13 @@ fun RegisterScreen(
                 shape = RoundedCornerShape(12.dp),
                 color = Color.White,
                 shadowElevation = 2.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Slate100)
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = Slate400,
+                        tint = MaterialTheme.colorScheme.outline,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -139,14 +139,14 @@ fun RegisterScreen(
                     text = "Join Us",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Slate800,
+                    color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-0.5).sp
                 )
                 Text(
                     text = "Start your journey with Duralap",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Slate400,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -169,10 +169,10 @@ fun RegisterScreen(
                         modifier = Modifier
                             .size(80.dp)
                             .clip(RoundedCornerShape(32.dp))
-                            .background(Slate100)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                             .border(
                                 width = 2.dp,
-                                color = Slate300,
+                                color = MaterialTheme.colorScheme.outlineVariant,
                                 shape = RoundedCornerShape(32.dp)
                             ),
                         contentAlignment = Alignment.Center
@@ -188,7 +188,7 @@ fun RegisterScreen(
                         modifier = Modifier
                             .offset(x = 4.dp, y = 4.dp)
                             .size(28.dp)
-                            .background(Blue500, RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(10.dp))
                             .border(2.dp, Color.White, RoundedCornerShape(10.dp))
                             .clickable { /* Upload logic */ },
                         contentAlignment = Alignment.Center
@@ -258,7 +258,7 @@ fun RegisterScreen(
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 contentDescription = null,
-                                tint = Slate300
+                                tint = MaterialTheme.colorScheme.outlineVariant
                             )
                         }
                     }
@@ -275,10 +275,10 @@ fun RegisterScreen(
                         .shadow(
                             elevation = 16.dp,
                             shape = RoundedCornerShape(24.dp),
-                            spotColor = Blue200,
-                            ambientColor = Blue200
+                            spotColor = MaterialTheme.colorScheme.primaryContainer,
+                            ambientColor = MaterialTheme.colorScheme.primaryContainer
                         ),
-                    colors = ButtonDefaults.buttonColors(containerColor = Blue500),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(24.dp),
                     enabled = registerState !is UiState.Loading
                 ) {
@@ -299,7 +299,7 @@ fun RegisterScreen(
                 Text(
                     text = "By tapping Create Account, you agree to our Terms & Privacy Policy.",
                     fontSize = 10.sp,
-                    color = Slate400,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     lineHeight = 16.sp,
                     modifier = Modifier.padding(horizontal = 24.dp)
@@ -312,11 +312,11 @@ fun RegisterScreen(
                     modifier = Modifier.padding(bottom = 32.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Have an account? ", fontSize = 14.sp, color = Slate500, fontWeight = FontWeight.Medium)
+                    Text(text = "Have an account? ", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
                     Text(
                         text = "Log In",
                         fontSize = 14.sp,
-                        color = Blue500,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable { onNavigateToLogin() }
                     )
@@ -327,7 +327,7 @@ fun RegisterScreen(
                     modifier = Modifier
                         .padding(bottom = 12.dp)
                         .size(width = 96.dp, height = 6.dp)
-                        .background(Slate200, RoundedCornerShape(3.dp))
+                        .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(3.dp))
                 )
             }
         }
@@ -373,16 +373,16 @@ fun RegisterTextField(
     TextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder, color = Slate400, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
+        placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
         modifier = Modifier
             .fillMaxWidth()
             .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp), spotColor = Color(0x1A000000)),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = Color.White,
             unfocusedContainerColor = Color.White,
-            focusedIndicatorColor = Blue500,
-            unfocusedIndicatorColor = Slate100,
-            cursorColor = Blue500
+            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+            unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant,
+            cursorColor = MaterialTheme.colorScheme.primary
         ),
         shape = RoundedCornerShape(16.dp),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),

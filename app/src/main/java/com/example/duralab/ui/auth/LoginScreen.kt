@@ -85,13 +85,13 @@ fun LoginScreen(
             Box(
                 modifier = Modifier
                     .size(80.dp)
-                    .background(Blue50, CircleShape),
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = null,
-                    tint = Blue500,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(40.dp)
                 )
             }
@@ -102,13 +102,13 @@ fun LoginScreen(
                 text = "Welcome back",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Slate800
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = "Login to your Duralap account",
                 fontSize = 14.sp,
-                color = Slate400,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
                 textAlign = TextAlign.Center
             )
@@ -126,7 +126,7 @@ fun LoginScreen(
                     text = "MOBILE NUMBER",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Slate400,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 1.sp,
                     modifier = Modifier.padding(start = 4.dp)
                 )
@@ -136,17 +136,17 @@ fun LoginScreen(
                 TextField(
                     value = phoneNumber,
                     onValueChange = { phoneNumber = it },
-                    placeholder = { Text("1XXXXXXXXX", color = Slate400) },
-                    prefix = { Text("+880 ", color = Slate400, fontWeight = FontWeight.Medium) },
+                    placeholder = { Text("1XXXXXXXXX", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                    prefix = { Text("+880 ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .shadow(elevation = 0.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Slate50,
-                        unfocusedContainerColor = Slate50,
-                        focusedIndicatorColor = Blue500,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                         unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = Blue500
+                        cursorColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(16.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -160,7 +160,7 @@ fun LoginScreen(
                     text = "PASSWORD",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Slate400,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 1.sp,
                     modifier = Modifier.padding(start = 4.dp)
                 )
@@ -170,24 +170,24 @@ fun LoginScreen(
                 TextField(
                     value = password,
                     onValueChange = { password = it },
-                    placeholder = { Text("••••••••", color = Slate400) },
+                    placeholder = { Text("••••••••", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 contentDescription = null,
-                                tint = Slate400
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Slate50,
-                        unfocusedContainerColor = Slate50,
-                        focusedIndicatorColor = Blue500,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                         unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = Blue500
+                        cursorColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(16.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -198,7 +198,7 @@ fun LoginScreen(
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
                     Text(
                         text = "Forgot password?",
-                        color = Blue500,
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier
@@ -218,11 +218,11 @@ fun LoginScreen(
                         .shadow(
                             elevation = 16.dp,
                             shape = RoundedCornerShape(16.dp),
-                            spotColor = Blue200,
-                            ambientColor = Blue200
+                            spotColor = MaterialTheme.colorScheme.primaryContainer,
+                            ambientColor = MaterialTheme.colorScheme.primaryContainer
                         ),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Blue500),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     enabled = loginState !is UiState.Loading
                 ) {
                     if (loginState is UiState.Loading) {
@@ -253,16 +253,16 @@ fun LoginScreen(
                     .padding(vertical = 32.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(modifier = Modifier.weight(1f).height(1.dp).background(Slate100))
+                Box(modifier = Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
                 Text(
                     text = "OR",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Slate400,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 2.sp,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
-                 Box(modifier = Modifier.weight(1f).height(1.dp).background(Slate100))
+                 Box(modifier = Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
             }
 
             // Google Login Button (Placeholder)
@@ -272,8 +272,8 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Slate200),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Slate800)
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Using a Google Icon SVG representation or painterResource if available
@@ -289,11 +289,11 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Text(text = "Don't have an account? ", fontSize = 14.sp, color = Slate400)
+                Text(text = "Don't have an account? ", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     text = "Sign Up",
                     fontSize = 14.sp,
-                    color = Blue500,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable { onNavigateToRegister() }
                 )
@@ -305,7 +305,7 @@ fun LoginScreen(
             Box(
                 modifier = Modifier
                     .size(width = 112.dp, height = 4.dp)
-                    .background(Slate200, RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp))
             )
             
             Spacer(modifier = Modifier.height(16.dp))

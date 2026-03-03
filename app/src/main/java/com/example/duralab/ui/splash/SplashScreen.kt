@@ -38,11 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.duralab.ui.auth.AuthViewModel
-import com.example.duralab.ui.theme.Blue200
-import com.example.duralab.ui.theme.Blue500
-import com.example.duralab.ui.theme.Slate200
-import com.example.duralab.ui.theme.Slate400
-import com.example.duralab.ui.theme.Slate800
+
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -128,10 +124,10 @@ fun SplashScreen(
                     .shadow(
                         elevation = 20.dp,
                         shape = RoundedCornerShape(40.dp),
-                        spotColor = Blue200,
-                        ambientColor = Blue200
+                        spotColor = MaterialTheme.colorScheme.primaryContainer,
+                        ambientColor = MaterialTheme.colorScheme.primaryContainer
                     )
-                    .background(Blue500, RoundedCornerShape(40.dp))
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(40.dp))
                     .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -156,14 +152,14 @@ fun SplashScreen(
                     text = "Duralap",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Slate800,
+                    color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-0.5).sp
                 )
                 Text(
                     text = "MESSAGING & VIDEO CALL",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Blue500,
+                    color = MaterialTheme.colorScheme.primary,
                     letterSpacing = 2.sp,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -183,14 +179,14 @@ fun SplashScreen(
                 text = "FROM",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
-                color = Slate400,
+                color = MaterialTheme.colorScheme.outline,
                 letterSpacing = 4.sp
             )
             Text(
                 text = "SAZIB TECH",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Slate800,
+                color = MaterialTheme.colorScheme.onSurface,
                 letterSpacing = 2.sp,
                 modifier = Modifier.padding(top = 4.dp)
             )
@@ -200,7 +196,7 @@ fun SplashScreen(
             // Loading Indicator
             CircularProgressIndicator(
                 modifier = Modifier.size(16.dp),
-                color = Blue500,
+                color = MaterialTheme.colorScheme.primary,
                 strokeWidth = 2.dp
             )
         }
@@ -211,7 +207,7 @@ fun SplashScreen(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 8.dp)
                 .size(width = 112.dp, height = 4.dp)
-                .background(Slate200, RoundedCornerShape(2.dp))
+                .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp))
         )
     }
 }
