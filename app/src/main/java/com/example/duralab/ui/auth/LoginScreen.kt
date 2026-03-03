@@ -85,7 +85,7 @@ fun LoginScreen(
             Box(
                 modifier = Modifier
                     .size(80.dp)
-                    .background(Color(0xFFEFF6FF), CircleShape),
+                    .background(Blue50, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -142,8 +142,8 @@ fun LoginScreen(
                         .fillMaxWidth()
                         .shadow(elevation = 0.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF8FAFC),
-                        unfocusedContainerColor = Color(0xFFF8FAFC),
+                        focusedContainerColor = Slate50,
+                        unfocusedContainerColor = Slate50,
                         focusedIndicatorColor = Blue500,
                         unfocusedIndicatorColor = Color.Transparent,
                         cursorColor = Blue500
@@ -183,8 +183,8 @@ fun LoginScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF8FAFC),
-                        unfocusedContainerColor = Color(0xFFF8FAFC),
+                        focusedContainerColor = Slate50,
+                        unfocusedContainerColor = Slate50,
                         focusedIndicatorColor = Blue500,
                         unfocusedIndicatorColor = Color.Transparent,
                         cursorColor = Blue500
@@ -253,7 +253,7 @@ fun LoginScreen(
                     .padding(vertical = 32.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(modifier = Modifier.weight(1f).height(1.dp).background(Color(0xFFF1F5F9)))
+                Box(modifier = Modifier.weight(1f).height(1.dp).background(Slate100))
                 Text(
                     text = "OR",
                     fontSize = 10.sp,
@@ -262,7 +262,7 @@ fun LoginScreen(
                     letterSpacing = 2.sp,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
-                Box(modifier = Modifier.weight(1f).height(1.dp).background(Color(0xFFF1F5F9)))
+                 Box(modifier = Modifier.weight(1f).height(1.dp).background(Slate100))
             }
 
             // Google Login Button (Placeholder)
@@ -272,7 +272,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Slate200),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Slate800)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

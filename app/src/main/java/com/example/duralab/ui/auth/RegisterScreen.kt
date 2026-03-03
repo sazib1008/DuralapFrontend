@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.duralab.ui.theme.*
@@ -67,7 +68,7 @@ fun RegisterScreen(
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFFF8FAFC), Color.White)
+                    colors = listOf(Slate50, Color.White)
                 )
             )
     ) {
@@ -84,7 +85,7 @@ fun RegisterScreen(
             modifier = Modifier
                 .size(96.dp)
                 .offset(x = (-48).dp, y = 160.dp)
-                .background(Color(0xFFE0E7FF).copy(alpha = 0.5f), CircleShape)
+                .background(Indigo50.copy(alpha = 0.5f), CircleShape)
                 .blur(24.dp)
         )
 
@@ -114,7 +115,7 @@ fun RegisterScreen(
                 shape = RoundedCornerShape(12.dp),
                 color = Color.White,
                 shadowElevation = 2.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
+                border = androidx.compose.foundation.BorderStroke(1.dp, Slate100)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -168,10 +169,10 @@ fun RegisterScreen(
                         modifier = Modifier
                             .size(80.dp)
                             .clip(RoundedCornerShape(32.dp))
-                            .background(Color(0xFFF1F5F9))
+                            .background(Slate100)
                             .border(
                                 width = 2.dp,
-                                color = Color(0xFFCBD5E1),
+                                color = Slate300,
                                 shape = RoundedCornerShape(32.dp)
                             ),
                         contentAlignment = Alignment.Center
@@ -257,7 +258,7 @@ fun RegisterScreen(
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 contentDescription = null,
-                                tint = Color(0xFFCBD5E1)
+                                tint = Slate300
                             )
                         }
                     }
@@ -380,7 +381,7 @@ fun RegisterTextField(
             focusedContainerColor = Color.White,
             unfocusedContainerColor = Color.White,
             focusedIndicatorColor = Blue500,
-            unfocusedIndicatorColor = Color(0xFFF1F5F9),
+            unfocusedIndicatorColor = Slate100,
             cursorColor = Blue500
         ),
         shape = RoundedCornerShape(16.dp),
