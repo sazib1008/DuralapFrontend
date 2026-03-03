@@ -24,8 +24,12 @@ class DashboardViewModel @Inject constructor(
     private val _recentChats = MutableStateFlow<UiState<List<ChatEntity>>>(UiState.Loading)
     val recentChats: StateFlow<UiState<List<ChatEntity>>> = _recentChats
 
+    private val _suggestedUsers = MutableStateFlow<List<UserEntity>>(emptyList())
+    val suggestedUsers: StateFlow<List<UserEntity>> = _suggestedUsers
+
     init {
         loadData()
+        loadSuggestedUsers()
     }
 
     private fun loadData() {
@@ -40,5 +44,19 @@ class DashboardViewModel @Inject constructor(
                 _recentChats.value = UiState.Success(chats)
             }
         }
+    }
+
+    private fun loadSuggestedUsers() {
+        // Mocking suggested users for the "Add New User" modal
+        _suggestedUsers.value = listOf(
+            UserEntity("a", "Alice Freeman", "alice@example.com", null, "offline", null),
+            UserEntity("b", "Bob Marley", "bob@marley.com", null, "offline", null),
+            UserEntity("c", "Charlie Brown", "charlie@fb.com", null, "online", null)
+        )
+    }
+
+    fun searchUsers(query: String) {
+        // Logic to filter suggested users or search from API
+        // For now, we just mock the existing list filtering
     }
 }
