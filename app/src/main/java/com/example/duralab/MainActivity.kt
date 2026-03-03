@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
-import com.example.duralab.ui.theme.DuralabTheme
 import com.example.duralab.ui.navigation.DuralabNavHost
+import com.example.duralab.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            DuralabTheme {
+            AppTheme {
                 val navController = rememberNavController()
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     DuralabNavHost(
