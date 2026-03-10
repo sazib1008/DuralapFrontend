@@ -5,7 +5,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +20,8 @@ import com.example.duralab.util.UiState
 fun ChatScreen(
     chatId: String,
     viewModel: ChatViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToCall: (String) -> Unit
 ) {
     var messageText by remember { mutableStateOf("") }
     val messagesState by viewModel.messages.collectAsState()
@@ -34,7 +36,12 @@ fun ChatScreen(
                 title = { Text("Chat: $chatId") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { onNavigateToCall(chatId) }) { // Using chatId as target userId for now
+                        Icon(Icons.Default.Call, contentDescription = "Video Call")
                     }
                 }
             )

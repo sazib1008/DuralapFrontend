@@ -8,5 +8,8 @@ sealed class Screen(val route: String) {
         fun createRoute(chatId: String) = "chat/$chatId"
     }
     object Profile : Screen("profile")
+    object Call : Screen("call/{userId}") {
+        fun createRoute(userId: String) = "call/$userId"
+    }
     object Splash : Screen("splash")
 }

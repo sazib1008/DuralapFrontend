@@ -41,9 +41,7 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
-    var phoneNumber by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
+    val loginFormState by viewModel.loginFormState.collectAsState()
     
     val context = LocalContext.current
     val loginState by viewModel.loginState.collectAsState()
@@ -123,7 +121,7 @@ fun LoginScreen(
             ) {
                 // Mobile Number Input
                 Text(
-                    text = "MOBILE NUMBER",
+                    text = "USERNAME OR EMAIL",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -134,10 +132,9 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 TextField(
-                    value = phoneNumber,
-                    onValueChange = { phoneNumber = it },
-                    placeholder = { Text("1XXXXXXXXX", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
-                    prefix = { Text("+880 ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium) },
+                    value = loginFormState.usernameOrEmail,
+                    onValueChange = { viewModel.onUsernameOrEmailChange(it) },
+                    placeholder = { Text("Enter username or email", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .shadow(elevation = 0.dp),
@@ -149,7 +146,7 @@ fun LoginScreen(
                         cursorColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(16.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     singleLine = true
                 )
 
@@ -168,14 +165,14 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 TextField(
-                    value = password,
-                    onValueChange = { password = it },
+                    value = loginFormState.password,
+                    onValueChange = { viewModel.onPasswordChange(it) },
                     placeholder = { Text("••••••••", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    visualTransformation = if (loginFormState.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        IconButton(onClick = { viewModel.onPasswordVisibilityChange(!loginFormState.passwordVisible) }) {
                             Icon(
-                                imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                imageVector = if (loginFormState.passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -211,7 +208,7 @@ fun LoginScreen(
 
                 // Login Button
                 Button(
-                    onClick = { viewModel.login(phoneNumber, password) },
+                    onClick = { viewModel.login(loginFormState.usernameOrEmail, loginFormState.password) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)

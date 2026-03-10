@@ -22,8 +22,13 @@ class AuthRepository @Inject constructor(
             val response = authApi.login(loginRequest)
             if (response.isSuccessful && response.body() != null) {
                 val authResponse = response.body()!!
-                tokenManager.saveToken(authResponse.token)
+                tokenManager.saveToken(authResponse.accessToken)
                 tokenManager.saveRefreshToken(authResponse.refreshToken)
+                tokenManager.saveUser(
+                    id = authResponse.user.id,
+                    username = authResponse.user.username,
+                    email = authResponse.user.email
+                )
                 emit(UiState.Success(authResponse))
             } else {
                 emit(UiState.Error(response.message() ?: "Login failed"))
@@ -33,15 +38,13 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun register(registerRequest: RegisterRequest): Flow<UiState<AuthResponse>> = flow {
+    suspend fun register(registerRequest: RegisterRequest): Flow<UiState<com.example.duralab.data.model.UserResponse>> = flow {
         emit(UiState.Loading)
         try {
             val response = authApi.register(registerRequest)
             if (response.isSuccessful && response.body() != null) {
-                val authResponse = response.body()!!
-                tokenManager.saveToken(authResponse.token)
-                tokenManager.saveRefreshToken(authResponse.refreshToken)
-                emit(UiState.Success(authResponse))
+                val userResponse = response.body()!!
+                emit(UiState.Success(userResponse))
             } else {
                 emit(UiState.Error(response.message() ?: "Registration failed"))
             }
@@ -50,8 +53,20 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    fun logout() {
-        tokenManager.clear()
+    suspend fun logout(): Flow<UiState<Unit>> = flow {
+        emit(UiState.Loading)
+        try {
+            val response = authApi.logout()
+            tokenManager.clear()
+            if (response.isSuccessful) {
+                emit(UiState.Success(Unit))
+            } else {
+                emit(UiState.Error(response.message() ?: "Logout failed"))
+            }
+        } catch (e: Exception) {
+            tokenManager.clear()
+            emit(UiState.Error(e.message ?: "An unknown error occurred"))
+        }
     }
 
     fun isLoggedIn(): Boolean {

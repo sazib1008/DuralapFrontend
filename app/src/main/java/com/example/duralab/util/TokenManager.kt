@@ -38,6 +38,18 @@ class TokenManager @Inject constructor(@ApplicationContext context: Context) {
         return sharedPreferences.getString("refresh_token", null)
     }
 
+    fun saveUser(id: String, username: String, email: String) {
+        sharedPreferences.edit()
+            .putString("user_id", id)
+            .putString("user_username", username)
+            .putString("user_email", email)
+            .apply()
+    }
+
+    fun getUserId(): String? = sharedPreferences.getString("user_id", null)
+    fun getUserName(): String? = sharedPreferences.getString("user_username", null)
+    fun getUserEmail(): String? = sharedPreferences.getString("user_email", null)
+
     fun clear() {
         sharedPreferences.edit().clear().apply()
     }

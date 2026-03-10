@@ -28,9 +28,9 @@ class AuthInterceptor @Inject constructor(
             val refreshToken = tokenManager.getRefreshToken()
             if (refreshToken != null) {
                 // Synchronously call refresh token
-                val tokenResponse = runBlocking { authApi.get().refreshToken(refreshToken) }
+                val tokenResponse = runBlocking { authApi.get().refreshToken(com.example.duralab.data.model.TokenRefreshRequest(refreshToken)) }
                 if (tokenResponse.isSuccessful && tokenResponse.body() != null) {
-                    val newToken = tokenResponse.body()!!.token
+                    val newToken = tokenResponse.body()!!.accessToken
                     tokenManager.saveToken(newToken)
                     
                     // Retry original request with new token

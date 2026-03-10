@@ -18,6 +18,8 @@ import com.example.duralab.ui.chat.ChatScreen
 import com.example.duralab.ui.chat.ChatViewModel
 import com.example.duralab.ui.profile.ProfileScreen
 import com.example.duralab.ui.splash.SplashScreen
+import com.example.duralab.ui.call.CallScreen
+import com.example.duralab.ui.call.CallViewModel
 
 @Composable
 fun DuralabNavHost(
@@ -98,6 +100,9 @@ fun DuralabNavHost(
                 viewModel = viewModel,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToCall = { userId ->
+                    navController.navigate(Screen.Call.createRoute(userId))
                 }
             )
         }
@@ -113,6 +118,16 @@ fun DuralabNavHost(
                 }
             )
         }
+        composable(Screen.Call.route) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            val viewModel: CallViewModel = hiltViewModel()
+            CallScreen(
+                userId = userId,
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
     }
 }
-

@@ -1,6 +1,8 @@
 package com.example.duralab.di
 
 import com.example.duralab.data.remote.AuthApi
+import com.example.duralab.data.remote.CallApi
+import com.example.duralab.data.remote.ChatApi
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -17,7 +19,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://api.duralab.com/" // Placeholder
+    private const val BASE_URL = "http://10.0.2.2:8080/" // Emulator localhost alias
 
     @Provides
     @Singleton
@@ -29,8 +31,13 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(
+        authInterceptor: com.example.duralab.util.AuthInterceptor,
+        authAuthenticator: com.example.duralab.util.AuthAuthenticator
+    ): OkHttpClient {
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
+            .authenticator(authAuthenticator)
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
             })
@@ -51,5 +58,29 @@ object NetworkModule {
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi {
         return retrofit.create(AuthApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCallApi(retrofit: Retrofit): CallApi {
+        return retrofit.create(CallApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatApi(retrofit: Retrofit): ChatApi {
+        return retrofit.create(ChatApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserApi(retrofit: Retrofit): com.example.duralab.data.remote.UserApi {
+        return retrofit.create(com.example.duralab.data.remote.UserApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMessageApi(retrofit: Retrofit): com.example.duralab.data.remote.MessageApi {
+        return retrofit.create(com.example.duralab.data.remote.MessageApi::class.java)
     }
 }
