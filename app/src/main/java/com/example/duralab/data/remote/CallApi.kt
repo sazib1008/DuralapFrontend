@@ -49,6 +49,12 @@ interface CallApi {
         @Query("limit") limit: Int = 50
     ): Response<List<CallResponse>>
 
+    @GET("api/calls/history/user/{userId}")
+    suspend fun getCallHistoryList(
+        @Path("userId") userId: String,
+        @Query("limit") limit: Int = 50
+    ): Response<List<com.example.duralab.data.model.CallHistoryItemResponse>>
+
     @GET("api/calls/ongoing")
     suspend fun getOngoingCalls(): Response<List<CallResponse>>
 

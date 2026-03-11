@@ -35,5 +35,6 @@ data class LoginRequest(
 data class RegisterRequest(
     @Json(name = "username") val username: String,
     @Json(name = "email") val email: String,
-    @Json(name = "password") val password: String
+    @Json(name = "password") val password: String,
+    @Json(name = "roles") val roles: List<String> = listOf("USER")
 )

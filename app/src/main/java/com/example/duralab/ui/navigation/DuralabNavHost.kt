@@ -20,6 +20,7 @@ import com.example.duralab.ui.profile.ProfileScreen
 import com.example.duralab.ui.splash.SplashScreen
 import com.example.duralab.ui.call.CallScreen
 import com.example.duralab.ui.call.CallViewModel
+import com.example.duralab.ui.call.CallHistoryScreen
 
 @Composable
 fun DuralabNavHost(
@@ -126,6 +127,16 @@ fun DuralabNavHost(
                 viewModel = viewModel,
                 onNavigateBack = {
                     navController.popBackStack()
+                }
+            )
+        }
+        composable(Screen.CallHistory.route) {
+            CallHistoryScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToCall = { userId ->
+                    navController.navigate(Screen.Call.createRoute(userId))
                 }
             )
         }

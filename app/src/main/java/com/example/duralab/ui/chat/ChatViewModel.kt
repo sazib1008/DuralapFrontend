@@ -58,9 +58,17 @@ class ChatViewModel @Inject constructor(
                     if (response.isSuccessful) {
                         response.body()?.forEach { msgRsp ->
                             val msgTimestamp = try {
-                                Instant.parse(msgRsp.createdAt).toEpochMilli()
+                                val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", java.util.Locale.US)
+                                format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                                format.parse(msgRsp.createdAt)?.time ?: System.currentTimeMillis()
                             } catch (e: Exception) {
-                                System.currentTimeMillis()
+                                try {
+                                    val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
+                                    format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                                    format.parse(msgRsp.createdAt)?.time ?: System.currentTimeMillis()
+                                } catch (e2: Exception) {
+                                    System.currentTimeMillis()
+                                }
                             }
                             
                             val msgEntity = MessageEntity(

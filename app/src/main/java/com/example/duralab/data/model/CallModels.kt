@@ -70,3 +70,28 @@ data class CallStatusUpdate(
     @Json(name = "userId") val userId: String,
     @Json(name = "timestamp") val timestamp: String? = null
 )
+
+@JsonClass(generateAdapter = true)
+data class PublicUserProfile(
+    @Json(name = "id") val id: String,
+    @Json(name = "username") val username: String,
+    @Json(name = "profilePicture") val profilePicture: String?,
+    @Json(name = "status") val status: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class CallHistoryItemResponse(
+    @Json(name = "id") val id: String,
+    @Json(name = "conversationId") val conversationId: String,
+    @Json(name = "callerId") val callerId: String,
+    @Json(name = "calleeId") val calleeId: String,
+    @Json(name = "callType") val callType: CallType,
+    @Json(name = "status") val status: CallStatus,
+    @Json(name = "startTime") val startTime: String?,
+    @Json(name = "endTime") val endTime: String?,
+    @Json(name = "duration") val duration: Long?,
+    @Json(name = "createdAt") val createdAt: String,
+    @Json(name = "updatedAt") val updatedAt: String,
+    @Json(name = "otherUser") val otherUser: PublicUserProfile?,
+    @Json(name = "isIncoming") val isIncoming: Boolean
+)

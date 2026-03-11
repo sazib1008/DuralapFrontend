@@ -62,7 +62,17 @@ class DashboardViewModel @Inject constructor(
                             val otherParticipantId = conv.participantIds.firstOrNull { it != currentUserId } ?: "group"
                             
                             val lastMsgTimestamp = try {
-                                if (conv.lastMessage?.createdAt != null) Instant.parse(conv.lastMessage.createdAt).toEpochMilli() else 0L
+                                if (conv.lastMessage?.createdAt != null) {
+                                    try {
+                                        val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", java.util.Locale.US)
+                                        format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                                        format.parse(conv.lastMessage.createdAt)?.time ?: 0L
+                                    } catch (e: Exception) {
+                                        val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
+                                        format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                                        format.parse(conv.lastMessage.createdAt)?.time ?: 0L
+                                    }
+                                } else 0L
                             } catch (e: Exception) {
                                 0L
                             }

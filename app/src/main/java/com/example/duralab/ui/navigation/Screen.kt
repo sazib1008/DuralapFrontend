@@ -11,5 +11,6 @@ sealed class Screen(val route: String) {
     object Call : Screen("call/{userId}") {
         fun createRoute(userId: String) = "call/$userId"
     }
+    object CallHistory : Screen("call_history")
     object Splash : Screen("splash")
 }
