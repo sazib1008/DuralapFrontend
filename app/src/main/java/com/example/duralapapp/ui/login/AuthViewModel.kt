@@ -1,0 +1,92 @@
+package com.example.duralapapp.ui.login
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.duralapapp.data.model.AuthResponse
+import com.example.duralapapp.data.model.LoginRequest
+import com.example.duralapapp.data.repository.AuthRepository
+import com.example.duralapapp.data.network.OfflineModeException
+import com.example.duralapapp.data.network.TokenManager
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+
+data class LoginUiState(
+    val email: String = "",
+    val password: String = "",
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val authResponse: AuthResponse? = null
+)
+
+
+
+
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+    private val tokenManager: TokenManager
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(LoginUiState())
+    val state = _state.asStateFlow()
+
+    fun onEmailChange(email: String) {
+        _state.value = _state.value.copy(
+            email = email,
+            error = null
+        )
+    }
+
+    fun onPasswordChange(password: String) {
+        _state.value = _state.value.copy(
+            password = password,
+            error = null
+        )
+    }
+
+    fun login() {
+        val current = _state.value
+        val email = current.email.trim()
+        val password = current.password
+
+        if (email.isBlank() || password.isBlank()) {
+            _state.value = current.copy(
+                error = "Email and password required"
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _state.value = current.copy(
+                isLoading = true,
+                error = null
+            )
+
+            authRepository.login(LoginRequest(email, password))
+                .onSuccess { data ->
+                    tokenManager.saveTokens(
+                        accessToken = data.accessToken,
+                        refreshToken = data.refreshToken,
+                        tokenType = data.tokenType,
+                        expiresIn = data.expiresIn,
+                        userId = data.user.id
+                    )
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        authResponse = data,
+                        error = null
+                    )
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = if (e is OfflineModeException) null else e.message ?: "Login failed"
+                    )
+                }
+        }
+    }
+}
