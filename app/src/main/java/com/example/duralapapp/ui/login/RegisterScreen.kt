@@ -5,13 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -20,13 +21,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -34,9 +33,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.duralapapp.ui.theme.*
 
 @Composable
-fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit = {},
+fun RegisterScreen(
+    onRegisterSuccess: () -> Unit,
+    onNavigateToLogin: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
@@ -44,7 +43,7 @@ fun LoginScreen(
 
     LaunchedEffect(uiState.authResponse) {
         if (uiState.authResponse != null) {
-            onLoginSuccess()
+            onRegisterSuccess()
         }
     }
 
@@ -82,60 +81,53 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Lock Icon Box
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(72.dp)
                     .background(Color(0xFF1E293B).copy(alpha = 0.5f), RoundedCornerShape(20.dp))
                     .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(20.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Lock",
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Register",
                     tint = TextMain,
                     modifier = Modifier.size(32.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Sign In Header
+            // Create Account Header
             Text(
-                text = "Sign In",
+                text = "Create Account",
                 style = MaterialTheme.typography.headlineLarge,
                 color = TextMain,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Secure communication for the next era.",
+                text = "Join Duralap for secure end-to-end messaging.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextMuted,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Form Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = CardBg),
                 shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)) // Subtle border
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp)
                 ) {
-                    // Email Field
-                    Text(
-                        text = "Email Address",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = TextMain,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
                     uiState.error?.let { error ->
                         Text(
                             text = error,
@@ -145,6 +137,36 @@ fun LoginScreen(
                         )
                     }
 
+                    // Username Field
+                    Text(
+                        text = "Username *",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextMain,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    CustomTextField(
+                        value = uiState.username,
+                        onValueChange = viewModel::onUsernameChange,
+                        placeholder = "johndoe",
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = TextMuted,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Email Field
+                    Text(
+                        text = "Email Address *",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextMain,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                     CustomTextField(
                         value = uiState.email,
                         onValueChange = viewModel::onEmailChange,
@@ -159,27 +181,15 @@ fun LoginScreen(
                         }
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Password Field
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Password",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = TextMain
-                        )
-                        TextButton(onClick = { /* Handle Forgot Password */ }) {
-                            Text(
-                                text = "Forgot Password?",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF818CF8)
-                            )
-                        }
-                    }
+                    Text(
+                        text = "Password *",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextMain,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                     CustomTextField(
                         value = uiState.password,
                         onValueChange = viewModel::onPasswordChange,
@@ -198,11 +208,49 @@ fun LoginScreen(
                         }
                     )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    // Sign In Button
+                    // Full Name Field (Optional)
+                    Text(
+                        text = "Full Name (Optional)",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextMain,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    CustomTextField(
+                        value = uiState.fullName,
+                        onValueChange = viewModel::onFullNameChange,
+                        placeholder = "John Doe"
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Phone Number Field (Optional)
+                    Text(
+                        text = "Phone Number (Optional)",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextMain,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    CustomTextField(
+                        value = uiState.phoneNumber,
+                        onValueChange = viewModel::onPhoneNumberChange,
+                        placeholder = "+1234567890",
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = null,
+                                tint = TextMuted,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    // Register Button
                     Button(
-                        onClick = viewModel::login,
+                        onClick = viewModel::register,
                         enabled = !uiState.isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -218,153 +266,37 @@ fun LoginScreen(
                             )
                         } else {
                             Text(
-                                text = "Sign In",
+                                text = "Create Account",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Divider
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        HorizontalDivider(
-                            modifier = Modifier.weight(1f),
-                            color = Color.White.copy(alpha = 0.05f)
-                        )
-                        Text(
-                            text = "OR CONTINUE WITH",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextMuted,
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            letterSpacing = 1.sp
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.weight(1f),
-                            color = Color.White.copy(alpha = 0.05f)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Social Buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        SocialButton(
-                            modifier = Modifier.weight(1f),
-                            text = "Google",
-                            icon = null // In real app, add Google logo resource
-                        )
-                        SocialButton(
-                            modifier = Modifier.weight(1f),
-                            text = "Apple",
-                            icon = null // In real app, add Apple logo resource
-                        )
-                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Footer
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Don't have an account?",
+                    text = "Already have an account?",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMuted
                 )
-                TextButton(onClick = onNavigateToRegister) {
+                TextButton(onClick = onNavigateToLogin) {
                     Text(
-                        text = "Create Account",
+                        text = "Sign In",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF818CF8),
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(20.dp))
         }
-    }
-}
-
-@Composable
-fun CustomTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    trailingIcon: @Composable (() -> Unit)? = null
-) {
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp)),
-        placeholder = {
-            Text(
-                text = placeholder,
-                color = PlaceholderColor,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = InputBg,
-            unfocusedContainerColor = InputBg,
-            disabledContainerColor = InputBg,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            cursorColor = PrimaryBlue,
-            focusedTextColor = TextMain,
-            unfocusedTextColor = TextMain
-        ),
-        shape = RoundedCornerShape(12.dp),
-        visualTransformation = visualTransformation,
-        keyboardOptions = keyboardOptions,
-        trailingIcon = trailingIcon,
-        singleLine = true
-    )
-}
-
-@Composable
-fun SocialButton(
-    modifier: Modifier = Modifier,
-    text: String,
-    icon: ImageVector? = null
-) {
-    OutlinedButton(
-        onClick = { /* Handle Social Login */ },
-        modifier = modifier.height(50.dp),
-        shape = RoundedCornerShape(25.dp),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextMain),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (icon != null) {
-                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Text(text = text, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF0B0E14)
-@Composable
-fun LoginScreenPreview() {
-    DuralapAppTheme {
-        LoginScreen(onLoginSuccess = {})
     }
 }

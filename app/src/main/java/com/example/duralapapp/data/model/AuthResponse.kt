@@ -64,13 +64,13 @@ data class UserResponse(
     val profileImageUrl: String?,
     @Json(name = "phoneNumber")
     val phoneNumber: String?,
-    @Json(name = "verified")
+    @Json(name = "isVerified")
     val isVerified: Boolean,
     @Json(name = "status")
     val status: UserStatus,
     @Json(name = "lastSeen")
     val lastSeen: Instant?,
-    @Json(name = "inCall")
+    @Json(name = "isInCall")
     val isInCall: Boolean,
     @Json(name = "currentCallId")
     val currentCallId: String?,
@@ -96,7 +96,7 @@ data class PublicUserProfile(
     val profileImageUrl: String?,
     @Json(name = "status")
     val status: UserStatus,
-    @Json(name = "verified")
+    @Json(name = "isVerified")
     val isVerified: Boolean,
     @Json(name = "lastSeen")
     val lastSeen: Instant?
@@ -140,7 +140,7 @@ data class UserUpdateRequest(
     val phoneNumber: String? = null,
     @Json(name = "status")
     val status: UserStatus? = null,
-    @Json(name = "verified")
+    @Json(name = "isVerified")
     val isVerified: Boolean? = null,
     @Json(name = "roles")
     val roles: Set<Role>? = null

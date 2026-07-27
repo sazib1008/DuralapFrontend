@@ -79,12 +79,17 @@ data class WebRTCSignal(
     @Json(name = "senderId")
     val senderId: String,
     @Json(name = "targetId")
-    val targetId: String,
+    val targetId: String? = null,
     @Json(name = "type")
     val type: SignalType,
     @Json(name = "data")
-    val data: String
+    val data: String? = null,
+    @Json(name = "sdpData")
+    val sdpData: String? = null,
+    @Json(name = "iceCandidate")
+    val iceCandidate: String? = null
 )
+
 
 @JsonClass(generateAdapter = true)
 data class CallStatusUpdate(

@@ -53,8 +53,12 @@ class RetryInterceptor @Inject constructor(
                     }
 
                     response.code >= 500 -> {
-                        response.close()
-                        waitWithCallAwareness(chain, backoffDelay(attempt))
+                        if (attempt < MAX_RETRIES - 1) {
+                            response.close()
+                            waitWithCallAwareness(chain, backoffDelay(attempt))
+                        } else {
+                            return response
+                        }
                     }
 
                     else -> return response

@@ -67,6 +67,21 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Destination.Home.route) {
                                         popUpTo(Destination.Login.route) { inclusive = true }
                                     }
+                                },
+                                onNavigateToRegister = {
+                                    navController.navigate(Destination.Register.route)
+                                }
+                            )
+                        }
+                        composable(Destination.Register.route) {
+                            com.example.duralapapp.ui.login.RegisterScreen(
+                                onRegisterSuccess = {
+                                    navController.navigate(Destination.Home.route) {
+                                        popUpTo(Destination.Login.route) { inclusive = true }
+                                    }
+                                },
+                                onNavigateToLogin = {
+                                    navController.popBackStack()
                                 }
                             )
                         }
@@ -74,12 +89,48 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(
                                 onOpenProfile = {
                                     navController.navigate(Destination.Profile.route)
+                                },
+                                onOpenSearch = {
+                                    navController.navigate(Destination.Search.route)
+                                },
+                                onOpenRequests = {
+                                    navController.navigate(Destination.Requests.route)
+                                },
+                                onOpenChat = { conversationId, recipientName ->
+                                    navController.navigate(
+                                        Destination.ChatDetail.createRoute(conversationId, recipientName)
+                                    )
                                 }
                             )
                         }
                         composable(Destination.Profile.route) {
                             ProfileScreen(
                                 onBackToHome = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Destination.Search.route) {
+                            com.example.duralapapp.ui.search.SearchUserScreen(
+                                onBackClick = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Destination.Requests.route) {
+                            com.example.duralapapp.ui.requests.ConversationRequestsScreen(
+                                onBackClick = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Destination.ChatDetail.route) {
+                            com.example.duralapapp.ui.chat.ChatDetailScreen(
+                                onBackClick = { navController.popBackStack() },
+                                onStartCall = { targetUserId, targetUserName, conversationId, callType ->
+                                    navController.navigate(
+                                        Destination.Call.createRoute(targetUserId, targetUserName, conversationId, callType)
+                                    )
+                                }
+                            )
+                        }
+                        composable(Destination.Call.route) {
+                            com.example.duralapapp.ui.call.CallScreen(
+                                onBackClick = { navController.popBackStack() }
                             )
                         }
                     }

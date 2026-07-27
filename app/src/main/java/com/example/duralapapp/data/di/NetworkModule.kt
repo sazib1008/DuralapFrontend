@@ -25,11 +25,13 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "http://10.0.2.2:8080/"
 
+    private const val BASE_URL = "http://10.0.2.2:8080/"    //private const val BASE_URL = "http://10.0.2.2:8080/"
+//    private const val BASE_URL = "http://192.168.0.179:8080/" // আপনার Port সহ
     @Provides
     @Singleton
     fun provideMoshi(): Moshi = Moshi.Builder()
+        .add(com.example.duralapapp.data.model.InstantAdapter())
         .addLast(KotlinJsonAdapterFactory())
         .build()
 
@@ -91,6 +93,7 @@ object NetworkModule {
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .cache(cache)
+            .pingInterval(15, java.util.concurrent.TimeUnit.SECONDS)
             .addInterceptor(retryInterceptor)
             .addInterceptor(authInterceptor)
             .addNetworkInterceptor(staleWhileRevalidateInterceptor)
@@ -116,5 +119,41 @@ object NetworkModule {
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi {
         return retrofit.create(AuthApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSearchApi(retrofit: Retrofit): com.example.duralapapp.data.api.SearchApi {
+        return retrofit.create(com.example.duralapapp.data.api.SearchApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideConversationRequestApi(retrofit: Retrofit): com.example.duralapapp.data.api.ConversationRequestApi {
+        return retrofit.create(com.example.duralapapp.data.api.ConversationRequestApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideConversationApi(retrofit: Retrofit): com.example.duralapapp.data.api.ConversationApi {
+        return retrofit.create(com.example.duralapapp.data.api.ConversationApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMessageApi(retrofit: Retrofit): com.example.duralapapp.data.api.MessageApi {
+        return retrofit.create(com.example.duralapapp.data.api.MessageApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserApi(retrofit: Retrofit): com.example.duralapapp.data.api.UserApi {
+        return retrofit.create(com.example.duralapapp.data.api.UserApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCallApi(retrofit: Retrofit): com.example.duralapapp.data.api.CallApi {
+        return retrofit.create(com.example.duralapapp.data.api.CallApi::class.java)
     }
 }

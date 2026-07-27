@@ -27,17 +27,9 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,113 +39,263 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.duralapapp.ui.theme.BgDark
-import com.example.duralapapp.ui.theme.BorderColor
-import com.example.duralapapp.ui.theme.CardBg
-import com.example.duralapapp.ui.theme.PrimaryBlue
+import com.example.duralapapp.ui.theme.*
 import com.example.duralapapp.ui.theme.TextMain
 import com.example.duralapapp.ui.theme.TextMuted
 
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.duralapapp.ui.theme.DuralapAppTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onBackToHome: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val updateMessage by viewModel.updateMessage.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    var isEditDialogVisible by remember { mutableStateOf(false) }
+    var isSignOutDialogVisible by remember { mutableStateOf(false) }
+
+    var editFullName by remember { mutableStateOf("") }
+    var editBio by remember { mutableStateOf("") }
+
+    LaunchedEffect(updateMessage) {
+        updateMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearUpdateMessage()
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = BgDark,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                IconButton(onClick = onBackToHome) {
-                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = TextMain)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBackToHome) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = TextMain)
+                    }
+                    Text(
+                        text = "Profile Settings",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = TextMain,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
                 }
-                Text(
-                    text = "Profile",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = TextMain,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
+
+                if (uiState is ProfileUiState.Success) {
+                    IconButton(onClick = {
+                        val user = (uiState as ProfileUiState.Success).user
+                        editFullName = user.fullName ?: ""
+                        editBio = user.bio ?: ""
+                        isEditDialogVisible = true
+                    }) {
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Profile", tint = PrimaryBlue)
+                    }
+                }
             }
         }
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 24.dp)
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            when (val state = uiState) {
+                is ProfileUiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = PrimaryBlue)
+                    }
+                }
+                is ProfileUiState.Success -> {
+                    val user = state.user
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(modifier = Modifier.height(20.dp))
 
-            // Profile Header
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(CardBg)
-                    .border(2.dp, PrimaryBlue, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = TextMuted,
-                    modifier = Modifier.size(60.dp)
-                )
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .background(CardBg)
+                                .border(2.dp, PrimaryBlue, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = TextMuted,
+                                modifier = Modifier.size(60.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = user.fullName ?: user.username,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = TextMain,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "@${user.username} • ${user.email}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextMuted
+                        )
+                        user.bio?.let { bio ->
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = bio,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextMuted,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        ProfileOptionItem(icon = Icons.Default.Person, label = "Account Information")
+                        ProfileOptionItem(icon = Icons.Default.Notifications, label = "Notifications")
+                        ProfileOptionItem(icon = Icons.Default.Security, label = "Privacy & Security")
+                        ProfileOptionItem(icon = Icons.Default.Help, label = "Help & Support")
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        Button(
+                            onClick = { isSignOutDialogVisible = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444).copy(alpha = 0.1f)),
+                            shape = RoundedCornerShape(28.dp),
+                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.2f))
+                        ) {
+                            Text(
+                                text = "Sign Out",
+                                color = Color(0xFFEF4444),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(40.dp))
+                    }
+                }
+                is ProfileUiState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 80.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = state.message,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { viewModel.loadUserProfile() },
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        ) {
+                            Text("Retry", color = Color.White)
+                        }
+                    }
+                }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Sajib Hossain",
-                style = MaterialTheme.typography.headlineSmall,
-                color = TextMain,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "sajib@example.com",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextMuted
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // Profile Options
-            ProfileOptionItem(icon = Icons.Default.Person, label = "Account Information")
-            ProfileOptionItem(icon = Icons.Default.Notifications, label = "Notifications")
-            ProfileOptionItem(icon = Icons.Default.Security, label = "Privacy & Security")
-            ProfileOptionItem(icon = Icons.Default.Help, label = "Help & Support")
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Logout Button
-            Button(
-                onClick = { viewModel.signOut() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444).copy(alpha = 0.1f)),
-                shape = RoundedCornerShape(28.dp),
-                border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.2f))
-            ) {
-                Text(
-                    text = "Sign Out",
-                    color = Color(0xFFEF4444),
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(40.dp))
         }
+    }
+
+    if (isEditDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { isEditDialogVisible = false },
+            containerColor = CardBg,
+            title = { Text("Edit Profile", color = TextMain, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = editFullName,
+                        onValueChange = { editFullName = it },
+                        label = { Text("Full Name", color = TextMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = InputBorderColor,
+                            focusedTextColor = TextMain,
+                            unfocusedTextColor = TextMain
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    OutlinedTextField(
+                        value = editBio,
+                        onValueChange = { editBio = it },
+                        label = { Text("Bio", color = TextMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = InputBorderColor,
+                            focusedTextColor = TextMain,
+                            unfocusedTextColor = TextMain
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.updateProfile(editFullName, editBio)
+                        isEditDialogVisible = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                ) {
+                    Text("Save", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { isEditDialogVisible = false }) {
+                    Text("Cancel", color = TextMuted)
+                }
+            }
+        )
+    }
+
+    if (isSignOutDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { isSignOutDialogVisible = false },
+            containerColor = CardBg,
+            title = { Text("Sign Out", color = TextMain, fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to sign out of Duralap?", color = TextMuted) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isSignOutDialogVisible = false
+                        viewModel.signOut()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                ) {
+                    Text("Sign Out", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { isSignOutDialogVisible = false }) {
+                    Text("Cancel", color = TextMuted)
+                }
+            }
+        )
     }
 }
 

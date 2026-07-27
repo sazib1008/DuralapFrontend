@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
+        <!-- আপনার পিসির Local IP Address -->
+        <domain includeSubdomains="true">192.168.0.179</domain>
+
+
+        <domain includeSubdomains="true">192.168.0.127</domain>
+        <!-- ওয়াইফাই IP (যদি পর পরবর্তীতে প্রয়োজন হয়) -->
+        <domain includeSubdomains="true">192.168.0.157</domain>
+        <!-- এমুলেটর ব্যবহারের জন্য -->
         <domain includeSubdomains="true">10.0.2.2</domain>
     </domain-config>
 </network-security-config>

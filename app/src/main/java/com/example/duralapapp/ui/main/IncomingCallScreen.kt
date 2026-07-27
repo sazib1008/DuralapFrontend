@@ -27,8 +27,10 @@ import com.example.duralapapp.ui.theme.*
 
 @Composable
 fun IncomingCallScreen(
-    name: String = "Alex Rivera",
-    status: String = "Incoming video call..."
+    name: String = "Contact",
+    status: String = "Incoming call...",
+    onAccept: () -> Unit = {},
+    onDecline: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -101,41 +103,32 @@ fun IncomingCallScreen(
                 // Profile Image Placeholder
                 Box(
                     modifier = Modifier
-                        .size(180.dp)
+                        .size(170.dp)
                         .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(Color(0xFF1E293B), Color(0xFF0F172A))
-                            )
-                        ),
+                        .background(Color(0xFF1E293B)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.15f),
-                        modifier = Modifier.size(100.dp)
+                        tint = TextMuted,
+                        modifier = Modifier.size(80.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = name,
-                style = MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.headlineMedium,
                 color = TextMain,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 44.sp,
-                letterSpacing = (-0.5).sp
+                fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.alpha(0.8f)
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Videocam,
                     contentDescription = null,
@@ -182,12 +175,14 @@ fun IncomingCallScreen(
             CallButton(
                 icon = Icons.Default.CallEnd,
                 color = Color(0xFFF43F5E), // Vibrant Red
-                label = "Decline"
+                label = "Decline",
+                onClick = onDecline
             )
             CallButton(
                 icon = Icons.Default.Videocam,
                 color = Color(0xFF6366F1), // Indigo/Blue
-                label = "Accept"
+                label = "Accept",
+                onClick = onAccept
             )
         }
     }
@@ -224,12 +219,13 @@ fun CallActionSmall(icon: ImageVector, label: String) {
 }
 
 @Composable
-fun CallButton(icon: ImageVector, color: Color, label: String) {
+fun CallButton(icon: ImageVector, color: Color, label: String, onClick: () -> Unit = {}) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(100.dp)
     ) {
         Surface(
+            onClick = onClick,
             modifier = Modifier.size(88.dp),
             color = color,
             shape = RoundedCornerShape(32.dp),

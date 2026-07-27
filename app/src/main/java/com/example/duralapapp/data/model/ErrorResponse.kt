@@ -30,6 +30,7 @@ data class ErrorResponse(
             if (errorBody.isNullOrBlank()) return null
             return try {
                 val moshi = Moshi.Builder()
+                    .add(InstantAdapter())
                     .addLast(KotlinJsonAdapterFactory())
                     .build()
                 val adapter = moshi.adapter(ErrorResponse::class.java)

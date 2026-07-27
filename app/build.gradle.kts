@@ -105,8 +105,6 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
-    //extended icon
-    implementation("androidx.compose.material:material-icons-extended:1.7.0") // ভার্সন আপনার প্রজেক্ট অনুযায়ী হতে পারে
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

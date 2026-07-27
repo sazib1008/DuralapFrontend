@@ -25,18 +25,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.duralapapp.data.model.CallType
 import com.example.duralapapp.ui.theme.*
 
 data class CallRecord(
     val id: Int,
     val name: String,
-    val type: CallType,
+    val type: CallMediaType,
     val direction: CallDirection,
     val time: String,
     val avatarColor: Color = Color(0xFF1E293B)
 )
 
-enum class CallType {
+enum class CallMediaType {
     VOICE, VIDEO
 }
 
@@ -45,13 +47,10 @@ enum class CallDirection {
 }
 
 @Composable
-fun CallsScreen() {
-    val calls = listOf(
-        CallRecord(1, "Alex Rivera", CallType.VIDEO, CallDirection.INCOMING, "12 mins ago, 15:42", Color(0xFF1E293B)),
-        CallRecord(2, "Elena Gilbert", CallType.VOICE, CallDirection.MISSED, "2 hours ago, 13:20", Color(0xFF334155)),
-        CallRecord(3, "Design Team", CallType.VIDEO, CallDirection.OUTGOING, "Yesterday, 18:05", Color(0xFF0D9488)),
-        CallRecord(4, "Michael Chen", CallType.VOICE, CallDirection.INCOMING, "Yesterday, 14:12", Color(0xFF1E293B))
-    )
+fun CallsScreen(
+    viewModel: CallsViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         containerColor = BgDark,
@@ -126,12 +125,83 @@ fun CallsScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 100.dp)
-            ) {
-                items(calls) { call ->
-                    CallListItem(call)
+            when (val state = uiState) {
+                is CallsUiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = PrimaryBlue)
+                    }
+                }
+                is CallsUiState.Success -> {
+                    if (state.calls.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 40.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Default.Call,
+                                    contentDescription = null,
+                                    tint = TextMuted,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "No Recent Calls",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = TextMain,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Your voice and video call logs will appear here.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextMuted
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(bottom = 100.dp)
+                        ) {
+                            items(state.calls, key = { it.id }) { callResp ->
+                                val mediaType = if (callResp.callType == CallType.VIDEO) CallMediaType.VIDEO else CallMediaType.VOICE
+                                val record = CallRecord(
+                                    id = callResp.id.hashCode(),
+                                    name = callResp.callerId,
+                                    type = mediaType,
+                                    direction = CallDirection.INCOMING,
+                                    time = callResp.status.name
+                                )
+                                CallListItem(record)
+                            }
+                        }
+                    }
+                }
+                is CallsUiState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = state.message,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFFEF4444)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { viewModel.loadCallHistory() },
+                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                            ) {
+                                Text("Retry", color = Color.White)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -226,7 +296,7 @@ fun CallListItem(call: CallRecord) {
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (call.type == CallType.VIDEO) Icons.Default.Videocam else Icons.Default.Call,
+                        imageVector = if (call.type == CallMediaType.VIDEO) Icons.Default.Videocam else Icons.Default.Call,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(12.dp)
@@ -276,7 +346,7 @@ fun CallListItem(call: CallRecord) {
                     .border(1.dp, Color.White.copy(alpha = 0.05f), CircleShape)
             ) {
                 Icon(
-                    imageVector = if (call.type == CallType.VIDEO) Icons.Default.Videocam else Icons.Default.Call,
+                    imageVector = if (call.type == CallMediaType.VIDEO) Icons.Default.Videocam else Icons.Default.Call,
                     contentDescription = "Call",
                     tint = TextMuted,
                     modifier = Modifier.size(20.dp)

@@ -1,5 +1,6 @@
 package com.example.duralapapp.ui.main
 
+import com.example.duralapapp.data.model.MessageStatus
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -31,10 +32,6 @@ data class Message(
     val isFromMe: Boolean,
     val status: MessageStatus = MessageStatus.SENT
 )
-
-enum class MessageStatus {
-    SENT, DELIVERED, READ
-}
 
 @Composable
 fun ChatScreen(

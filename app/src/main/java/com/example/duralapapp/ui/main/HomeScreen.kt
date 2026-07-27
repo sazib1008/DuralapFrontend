@@ -42,7 +42,11 @@ data class ChatItem(
 
 @Composable
 fun HomeScreen(
-    onOpenProfile: () -> Unit = {}
+    onOpenProfile: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenRequests: () -> Unit = {},
+    onOpenChat: (conversationId: String, recipientName: String) -> Unit = { _, _ -> },
+    viewModel: com.example.duralapapp.ui.chat.ChatListViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val chats = listOf(
         ChatItem(1, "Elena Gilbert", "The final designs are re...", "14:20", unreadCount = 2, avatarColor = Color(0xFF334155)),

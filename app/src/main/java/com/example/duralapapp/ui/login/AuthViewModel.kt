@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.duralapapp.data.model.AuthResponse
 import com.example.duralapapp.data.model.LoginRequest
+import com.example.duralapapp.data.model.UserCreateRequest
 import com.example.duralapapp.data.repository.AuthRepository
 import com.example.duralapapp.data.network.OfflineModeException
 import com.example.duralapapp.data.network.TokenManager
@@ -13,17 +14,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
 data class LoginUiState(
+    val username: String = "",
     val email: String = "",
     val password: String = "",
+    val fullName: String = "",
+    val bio: String = "",
+    val phoneNumber: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val authResponse: AuthResponse? = null
 )
-
-
-
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -33,6 +34,13 @@ class AuthViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(LoginUiState())
     val state = _state.asStateFlow()
+
+    fun onUsernameChange(username: String) {
+        _state.value = _state.value.copy(
+            username = username,
+            error = null
+        )
+    }
 
     fun onEmailChange(email: String) {
         _state.value = _state.value.copy(
@@ -44,6 +52,27 @@ class AuthViewModel @Inject constructor(
     fun onPasswordChange(password: String) {
         _state.value = _state.value.copy(
             password = password,
+            error = null
+        )
+    }
+
+    fun onFullNameChange(fullName: String) {
+        _state.value = _state.value.copy(
+            fullName = fullName,
+            error = null
+        )
+    }
+
+    fun onBioChange(bio: String) {
+        _state.value = _state.value.copy(
+            bio = bio,
+            error = null
+        )
+    }
+
+    fun onPhoneNumberChange(phoneNumber: String) {
+        _state.value = _state.value.copy(
+            phoneNumber = phoneNumber,
             error = null
         )
     }
@@ -85,6 +114,51 @@ class AuthViewModel @Inject constructor(
                     _state.value = _state.value.copy(
                         isLoading = false,
                         error = if (e is OfflineModeException) null else e.message ?: "Login failed"
+                    )
+                }
+        }
+    }
+
+    fun register() {
+        val current = _state.value
+        val username = current.username.trim()
+        val email = current.email.trim()
+        val password = current.password
+        val fullName = current.fullName.trim().ifBlank { null }
+        val bio = current.bio.trim().ifBlank { null }
+        val phoneNumber = current.phoneNumber.trim().ifBlank { null }
+
+        if (username.isBlank() || email.isBlank() || password.isBlank()) {
+            _state.value = current.copy(
+                error = "Username, email and password are required"
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _state.value = current.copy(
+                isLoading = true,
+                error = null
+            )
+
+            val request = UserCreateRequest(
+                username = username,
+                email = email,
+                password = password,
+                fullName = fullName,
+                bio = bio,
+                phoneNumber = phoneNumber
+            )
+
+            authRepository.register(request)
+                .onSuccess {
+                    // Auto login after successful registration
+                    login()
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = if (e is OfflineModeException) null else e.message ?: "Registration failed"
                     )
                 }
         }

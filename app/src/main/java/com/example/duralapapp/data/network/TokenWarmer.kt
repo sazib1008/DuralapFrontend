@@ -23,10 +23,10 @@ import kotlinx.coroutines.flow.firstOrNull
 @HiltWorker
 class TokenWarmWorker @AssistedInject constructor(
     @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
+    @Assisted workerParams: WorkerParameters,
     private val tokenManager: TokenManager,
     private val tokenRefreshCoordinator: TokenRefreshCoordinator
-) : CoroutineWorker(appContext, params) {
+) : CoroutineWorker(appContext, workerParams) {
     companion object {
         private const val WARMUP_WINDOW_MS = 5 * 60 * 1000L
     }
