@@ -96,3 +96,28 @@ enum class MessageStatus {
     READ,
     FAILED
 }
+
+fun ConversationResponse.getDisplayName(currentUserId: String): String {
+    val sender = lastMessage?.senderInfo
+    return if (sender != null && sender.id != currentUserId) {
+        sender.fullName?.takeIf { it.isNotBlank() } ?: sender.username
+    } else {
+        participantIds.firstOrNull { it != currentUserId }?.let { "User (${it.take(6)})" } ?: "Chat"
+    }
+}
+
+fun ConversationResponse.getFormattedTime(): String {
+    val targetInstant = lastMessage?.createdAt ?: createdAt
+    val zone = java.time.ZoneId.systemDefault()
+    val now = java.time.Instant.now().atZone(zone).toLocalDate()
+    val itemDate = targetInstant.atZone(zone).toLocalDate()
+
+    return when {
+        itemDate.isEqual(now) -> {
+            java.time.format.DateTimeFormatter.ofPattern("HH:mm").format(targetInstant.atZone(zone))
+        }
+        itemDate.isEqual(now.minusDays(1)) -> "Yesterday"
+        else -> java.time.format.DateTimeFormatter.ofPattern("MMM dd").format(targetInstant.atZone(zone))
+    }
+}
+

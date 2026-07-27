@@ -30,6 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.duralapapp.ui.theme.*
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.duralapapp.data.model.ConversationResponse
+import com.example.duralapapp.data.model.getDisplayName
+import com.example.duralapapp.data.model.getFormattedTime
+import com.example.duralapapp.ui.chat.ChatListUiState
+import com.example.duralapapp.ui.chat.ChatListViewModel
+
 data class ChatItem(
     val id: Int,
     val name: String,
@@ -46,13 +53,9 @@ fun HomeScreen(
     onOpenSearch: () -> Unit = {},
     onOpenRequests: () -> Unit = {},
     onOpenChat: (conversationId: String, recipientName: String) -> Unit = { _, _ -> },
-    viewModel: com.example.duralapapp.ui.chat.ChatListViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    viewModel: ChatListViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
-    val chats = listOf(
-        ChatItem(1, "Elena Gilbert", "The final designs are re...", "14:20", unreadCount = 2, avatarColor = Color(0xFF334155)),
-        ChatItem(2, "Design Team", "Marcus: Check out the n...", "12:05", isRead = true, avatarColor = Color(0xFF0D9488)),
-        ChatItem(3, "Alex Rivera", "See you at the meeting!", "Yesterday", isRead = true, avatarColor = Color(0xFF1E293B))
-    )
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = BgDark,
@@ -98,17 +101,107 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 100.dp)
-            ) {
-                items(chats) { chat ->
-                    ChatListItem(chat)
+            when (val state = uiState) {
+                is ChatListUiState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = 100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color(0xFF818CF8),
+                            strokeWidth = 3.dp
+                        )
+                    }
+                }
+                is ChatListUiState.Empty -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = 100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ChatBubbleOutline,
+                                contentDescription = null,
+                                tint = TextMuted,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "No active conversations yet",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = TextMuted
+                            )
+                        }
+                    }
+                }
+                is ChatListUiState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = 100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = CardBg),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.3f)),
+                            modifier = Modifier.fillMaxWidth(0.9f)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ErrorOutline,
+                                    contentDescription = null,
+                                    tint = Color(0xFFEF4444),
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = state.message,
+                                    color = TextMain,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontSize = 14.sp
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = { viewModel.loadConversations() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                ) {
+                                    Text("Retry", color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+                is ChatListUiState.Success -> {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 100.dp)
+                    ) {
+                        items(state.conversations, key = { it.id }) { conversation ->
+                            val recipientName = conversation.getDisplayName(state.currentUserId)
+                            ConversationListItem(
+                                conversation = conversation,
+                                recipientName = recipientName,
+                                onClick = { onOpenChat(conversation.id, recipientName) }
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun DuralapTopBar(onOpenProfile: () -> Unit = {}) {
@@ -270,6 +363,115 @@ fun ChatListItem(chat: ChatItem) {
         }
     }
 }
+
+@Composable
+fun ConversationListItem(
+    conversation: ConversationResponse,
+    recipientName: String,
+    onClick: () -> Unit
+) {
+    val lastMessageText = conversation.lastMessage?.content ?: "No messages yet"
+    val formattedTime = conversation.getFormattedTime()
+    val unreadCount = conversation.unreadCount
+    val isRead = conversation.lastMessage?.isRead ?: false
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(96.dp)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = CardBg),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Avatar
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF1E293B)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ChatBubble,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Info
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = recipientName,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextMain,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = formattedTime,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (unreadCount > 0) Color(0xFF818CF8) else TextMuted
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = lastMessageText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (unreadCount > 0) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF818CF8)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = unreadCount.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else if (isRead) {
+                        Icon(
+                            imageVector = Icons.Default.DoneAll,
+                            contentDescription = "Read",
+                            tint = TextMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun DuralapBottomNavigation(onOpenProfile: () -> Unit = {}) {
