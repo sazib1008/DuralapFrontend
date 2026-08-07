@@ -28,12 +28,15 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.duralapapp.data.model.MessageResponse
+import com.example.duralapapp.data.model.MessageStatus
 import com.example.duralapapp.ui.theme.*
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Videocam
+
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +45,7 @@ fun ChatDetailScreen(
     onStartCall: (targetUserId: String, targetUserName: String, conversationId: String, callType: String) -> Unit = { _, _, _, _ -> },
     viewModel: ChatDetailViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
@@ -179,6 +182,9 @@ fun ChatDetailScreen(
                     }
                 }
                 is ChatDetailUiState.Success -> {
+                    SideEffect {
+                        android.util.Log.d("DEBUG_STOMP", "[5] Compose recomposed | ConversationId: ${viewModel.conversationId} | messages.size: ${state.messages.size}")
+                    }
                     LaunchedEffect(state.messages.size) {
                         if (state.messages.isNotEmpty()) {
                             listState.animateScrollToItem(state.messages.size - 1)
@@ -261,10 +267,15 @@ fun ChatMessageBubble(
                     )
                     if (isFromMe) {
                         Spacer(modifier = Modifier.width(4.dp))
+                        val (icon, tint) = when {
+                            message.isRead || message.status == MessageStatus.READ -> Pair(Icons.Default.DoneAll, Color(0xFF38BDF8))
+                            message.status == MessageStatus.DELIVERED -> Pair(Icons.Default.DoneAll, Color.White.copy(alpha = 0.7f))
+                            else -> Pair(Icons.Default.Done, Color.White.copy(alpha = 0.7f))
+                        }
                         Icon(
-                            imageVector = if (message.isRead) Icons.Default.DoneAll else Icons.Default.Done,
+                            imageVector = icon,
                             contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.8f),
+                            tint = tint,
                             modifier = Modifier.size(14.dp)
                         )
                     }
@@ -273,3 +284,4 @@ fun ChatMessageBubble(
         }
     }
 }
+

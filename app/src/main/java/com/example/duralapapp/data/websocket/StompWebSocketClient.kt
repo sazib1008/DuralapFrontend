@@ -146,7 +146,7 @@ class StompWebSocketClient @Inject constructor(
 
         for (i in 1 until lines.size) {
             val line = lines[i]
-            if (line.isEmpty()) {
+            if (line.trim().isEmpty()) {
                 bodyStartIndex = i + 1
                 break
             }
@@ -159,6 +159,7 @@ class StompWebSocketClient @Inject constructor(
         val payload = lines.drop(bodyStartIndex).joinToString("\n").replace("\u0000", "")
 
         val stompMessage = StompMessage(command, headers, payload)
+        android.util.Log.d("DEBUG_STOMP", "[1] WebSocket frame received | Command: $command | Destination: ${headers["destination"]} | Payload: $payload")
         scope.launch {
             _messages.emit(stompMessage)
         }

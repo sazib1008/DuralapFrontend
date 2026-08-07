@@ -30,7 +30,9 @@ data class ConversationResponse(
     @Json(name = "lastMessage")
     val lastMessage: MessageResponse? = null,
     @Json(name = "unreadCount")
-    val unreadCount: Int = 0
+    val unreadCount: Int = 0,
+    @Json(name = "participants")
+    val participants: List<UserInfo>? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -98,12 +100,21 @@ enum class MessageStatus {
 }
 
 fun ConversationResponse.getDisplayName(currentUserId: String): String {
-    val sender = lastMessage?.senderInfo
-    return if (sender != null && sender.id != currentUserId) {
-        sender.fullName?.takeIf { it.isNotBlank() } ?: sender.username
-    } else {
-        participantIds.firstOrNull { it != currentUserId }?.let { "User (${it.take(6)})" } ?: "Chat"
+    // 1. Check participants list for the other user's info
+    val otherParticipant = participants?.firstOrNull { it.id != currentUserId }
+    if (otherParticipant != null) {
+        return otherParticipant.fullName?.takeIf { it.isNotBlank() } ?: otherParticipant.username
     }
+    // 2. Check last message sender if it's the other user
+    val sender = lastMessage?.senderInfo
+    if (sender != null && sender.id != currentUserId) {
+        return sender.fullName?.takeIf { it.isNotBlank() } ?: sender.username
+    }
+    // 3. Fallback to any available sender info or participant ID
+    return sender?.fullName?.takeIf { it.isNotBlank() }
+        ?: sender?.username
+        ?: participantIds.firstOrNull { it != currentUserId }?.let { "User (${it.take(6)})" }
+        ?: "Chat"
 }
 
 fun ConversationResponse.getFormattedTime(): String {

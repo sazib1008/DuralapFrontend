@@ -66,6 +66,17 @@ interface MessageApi {
         @Path("messageType") messageType: MessageType
     ): Response<List<MessageResponse>>
 
+    @GET("api/messages/sync")
+    suspend fun syncMessages(
+        @Query("since") sinceIso: String? = null
+    ): Response<List<MessageResponse>>
+
+    @PATCH("api/messages/{id}/status")
+    suspend fun updateMessageStatus(
+        @Path("id") id: String,
+        @Body request: com.example.duralapapp.data.model.MessageStatusUpdateRequest
+    ): Response<MessageResponse>
+
     @GET("api/messages/conversation/{conversationId}/media")
     suspend fun getMediaMessages(
         @Path("conversationId") conversationId: String

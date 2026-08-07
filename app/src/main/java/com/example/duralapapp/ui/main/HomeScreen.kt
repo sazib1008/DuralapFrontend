@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.example.duralapapp.ui.theme.*
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.example.duralapapp.data.model.ConversationResponse
 import com.example.duralapapp.data.model.getDisplayName
 import com.example.duralapapp.data.model.getFormattedTime
@@ -60,11 +61,15 @@ fun HomeScreen(
     Scaffold(
         containerColor = BgDark,
         topBar = {
-            DuralapTopBar(onOpenProfile = onOpenProfile)
+            DuralapTopBar(
+                onOpenProfile = onOpenProfile,
+                onOpenSearch = onOpenSearch,
+                onOpenRequests = onOpenRequests
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* New Chat */ },
+                onClick = onOpenSearch,
                 containerColor = PrimaryBlue,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(16.dp),
@@ -80,7 +85,10 @@ fun HomeScreen(
             }
         },
         bottomBar = {
-            DuralapBottomNavigation(onOpenProfile = onOpenProfile)
+            DuralapBottomNavigation(
+                onOpenProfile = onOpenProfile,
+                onOpenSearch = onOpenSearch
+            )
         }
     ) { innerPadding ->
         Column(
@@ -204,7 +212,11 @@ fun HomeScreen(
 
 
 @Composable
-fun DuralapTopBar(onOpenProfile: () -> Unit = {}) {
+fun DuralapTopBar(
+    onOpenProfile: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenRequests: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -236,7 +248,16 @@ fun DuralapTopBar(onOpenProfile: () -> Unit = {}) {
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { /* Search */ }) {
+            IconButton(onClick = onOpenRequests) {
+                Icon(
+                    imageVector = Icons.Default.PersonAdd,
+                    contentDescription = "Requests",
+                    tint = TextMuted,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(4.dp))
+            IconButton(onClick = onOpenSearch) {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search",
@@ -244,7 +265,7 @@ fun DuralapTopBar(onOpenProfile: () -> Unit = {}) {
                     modifier = Modifier.size(24.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(4.dp))
             IconButton(onClick = onOpenProfile) {
                 Box(
                     modifier = Modifier
@@ -374,6 +395,20 @@ fun ConversationListItem(
     val formattedTime = conversation.getFormattedTime()
     val unreadCount = conversation.unreadCount
     val isRead = conversation.lastMessage?.isRead ?: false
+    val profileImageUrl = conversation.participants?.firstOrNull { 
+        (it.fullName?.isNotBlank() == true && it.fullName == recipientName) || it.username == recipientName 
+    }?.profileImageUrl ?: conversation.lastMessage?.senderInfo?.profileImageUrl
+
+    val avatarColors = listOf(
+        Color(0xFF4F46E5),
+        Color(0xFF0D9488),
+        Color(0xFF0284C7),
+        Color(0xFF7C3AED),
+        Color(0xFFD97706),
+        Color(0xFF2563EB)
+    )
+    val avatarBg = avatarColors[kotlin.math.abs(recipientName.hashCode()) % avatarColors.size]
+    val initial = recipientName.trim().firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "?"
 
     Card(
         modifier = Modifier
@@ -390,19 +425,43 @@ fun ConversationListItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
+            // Avatar with initial or profile image
             Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF1E293B)),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.size(56.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.ChatBubble,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.5f),
-                    modifier = Modifier.size(28.dp)
+                if (!profileImageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = profileImageUrl,
+                        contentDescription = recipientName,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(avatarBg),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initial,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp
+                        )
+                    }
+                }
+
+                // Online indicator dot
+                Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF22C55E))
+                        .align(Alignment.BottomEnd)
+                        .border(2.dp, CardBg, CircleShape)
                 )
             }
 
@@ -421,8 +480,12 @@ fun ConversationListItem(
                         text = recipientName,
                         style = MaterialTheme.typography.titleMedium,
                         color = TextMain,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = formattedTime,
                         style = MaterialTheme.typography.bodySmall,
@@ -446,7 +509,7 @@ fun ConversationListItem(
                     if (unreadCount > 0) {
                         Box(
                             modifier = Modifier
-                                .size(20.dp)
+                                .size(22.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFF818CF8)),
                             contentAlignment = Alignment.Center
@@ -462,7 +525,7 @@ fun ConversationListItem(
                         Icon(
                             imageVector = Icons.Default.DoneAll,
                             contentDescription = "Read",
-                            tint = TextMuted,
+                            tint = Color(0xFF818CF8),
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -474,7 +537,10 @@ fun ConversationListItem(
 
 
 @Composable
-fun DuralapBottomNavigation(onOpenProfile: () -> Unit = {}) {
+fun DuralapBottomNavigation(
+    onOpenProfile: () -> Unit = {},
+    onOpenSearch: () -> Unit = {}
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -502,7 +568,8 @@ fun DuralapBottomNavigation(onOpenProfile: () -> Unit = {}) {
             BottomNavItem(
                 icon = Icons.Outlined.Contacts,
                 label = "Contacts",
-                isSelected = false
+                isSelected = false,
+                onClick = onOpenSearch
             )
             BottomNavItem(
                 icon = Icons.Outlined.Settings,
