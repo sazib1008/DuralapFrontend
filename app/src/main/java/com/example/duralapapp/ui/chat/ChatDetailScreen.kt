@@ -46,6 +46,8 @@ fun ChatDetailScreen(
     viewModel: ChatDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isUserOnline.collectAsStateWithLifecycle()
+    val lastSeen by viewModel.lastSeen.collectAsStateWithLifecycle()
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
@@ -54,21 +56,35 @@ fun ChatDetailScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF1E293B))
-                                .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = TextMuted,
-                                modifier = Modifier.size(20.dp)
-                            )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF1E293B))
+                                    .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = TextMuted,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            if (isOnline) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF10B981))
+                                        .align(Alignment.BottomEnd)
+                                        .border(1.5.dp, Color(0xFF1E293B), CircleShape)
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
@@ -78,11 +94,19 @@ fun ChatDetailScreen(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
                             )
-                            Text(
-                                text = "Online",
-                                color = Color(0xFF10B981),
-                                fontSize = 12.sp
-                            )
+                            if (isOnline) {
+                                Text(
+                                    text = "Online",
+                                    color = Color(0xFF10B981),
+                                    fontSize = 12.sp
+                                )
+                            } else {
+                                Text(
+                                    text = "Offline",
+                                    color = TextMuted,
+                                    fontSize = 12.sp
+                                )
+                            }
                         }
                     }
                 },

@@ -24,6 +24,7 @@ class StompWebSocketClient @Inject constructor(
     private var webSocket: WebSocket? = null
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var heartbeatJob: Job? = null
 
     private val _connectionState = MutableStateFlow(false)
     val connectionState: StateFlow<Boolean> = _connectionState.asStateFlow()
@@ -34,8 +35,18 @@ class StompWebSocketClient @Inject constructor(
     private val activeSubscriptions = ConcurrentHashMap<String, String>() // destination -> subId
     private val subIdCounter = AtomicInteger(0)
 
-    fun connect(wsUrl: String = "ws://10.0.2.2:8083/websocket", authToken: String? = null) {
+    private var lastWsUrl: String = "ws://192.168.0.179:8080/websocket"
+    private var lastAuthToken: String? = null
+    private var isManualDisconnect = false
+    private var reconnectJob: Job? = null
+
+    fun connect(wsUrl: String = "ws://192.168.0.179:8080/websocket", authToken: String? = null) {
         if (webSocket != null) return
+
+        isManualDisconnect = false
+        lastWsUrl = wsUrl
+        lastAuthToken = authToken
+        reconnectJob?.cancel()
 
         val requestBuilder = Request.Builder().url(wsUrl)
         if (!authToken.isNullOrBlank()) {
@@ -49,8 +60,8 @@ class StompWebSocketClient @Inject constructor(
                 val connectFrame = StringBuilder()
                     .append("CONNECT\n")
                     .append("accept-version:1.1,1.2\n")
-                    .append("host:10.0.2.2\n")
-                    .append("heart-beat:10000,10000\n")
+                    .append("host:192.168.0.179\n")
+                    .append("heart-beat:15000,15000\n")
                 if (!authToken.isNullOrBlank()) {
                     val token = if (authToken.startsWith("Bearer ")) authToken else "Bearer $authToken"
                     connectFrame.append("Authorization:").append(token).append("\n")
@@ -66,23 +77,43 @@ class StompWebSocketClient @Inject constructor(
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
                 Log.d(tag, "WebSocket Closing: $reason")
+                stopHeartbeat()
                 _connectionState.value = false
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 Log.d(tag, "WebSocket Closed: $reason")
+                stopHeartbeat()
                 _connectionState.value = false
                 this@StompWebSocketClient.webSocket = null
+                if (!isManualDisconnect) {
+                    scheduleReconnect()
+                }
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 Log.e(tag, "WebSocket Failure", t)
+                stopHeartbeat()
                 _connectionState.value = false
                 this@StompWebSocketClient.webSocket = null
+                if (!isManualDisconnect) {
+                    scheduleReconnect()
+                }
             }
         }
 
         webSocket = okHttpClient.newWebSocket(request, listener)
+    }
+
+    private fun scheduleReconnect() {
+        reconnectJob?.cancel()
+        reconnectJob = scope.launch {
+            delay(2000)
+            if (!isManualDisconnect && webSocket == null) {
+                Log.i(tag, "Attempting STOMP reconnect...")
+                connect(lastWsUrl, lastAuthToken)
+            }
+        }
     }
 
     fun subscribe(destination: String): String {
@@ -112,10 +143,34 @@ class StompWebSocketClient @Inject constructor(
     }
 
     fun disconnect() {
+        isManualDisconnect = true
+        reconnectJob?.cancel()
+        stopHeartbeat()
         webSocket?.close(1000, "Disconnect requested")
         webSocket = null
         _connectionState.value = false
         activeSubscriptions.clear()
+    }
+
+    private fun startHeartbeat() {
+        stopHeartbeat()
+        heartbeatJob = scope.launch {
+            while (isActive && _connectionState.value && webSocket != null) {
+                delay(15_000)
+                try {
+                    val heartbeatPayload = "{\"clientType\":\"ANDROID\"}"
+                    send("/app/presence.heartbeat", heartbeatPayload)
+                    Log.d(tag, "Sent STOMP presence heartbeat to /app/presence.heartbeat")
+                } catch (e: Exception) {
+                    Log.w(tag, "Failed to send presence heartbeat", e)
+                }
+            }
+        }
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
     }
 
     private fun sendSubscribeFrame(subId: String, destination: String) {
@@ -134,6 +189,7 @@ class StompWebSocketClient @Inject constructor(
         if (command == "CONNECTED") {
             Log.d(tag, "STOMP Handshake CONNECTED")
             _connectionState.value = true
+            startHeartbeat()
             // Re-subscribe any pending active subscriptions
             activeSubscriptions.forEach { (dest, subId) ->
                 sendSubscribeFrame(subId, dest)

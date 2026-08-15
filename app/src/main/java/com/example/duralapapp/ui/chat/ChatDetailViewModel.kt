@@ -51,6 +51,13 @@ class ChatDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ChatDetailUiState>(ChatDetailUiState.Loading)
     val uiState: StateFlow<ChatDetailUiState> = _uiState.asStateFlow()
 
+    private val _isUserOnline = MutableStateFlow(false)
+    val isUserOnline: StateFlow<Boolean> = _isUserOnline.asStateFlow()
+
+    private val _lastSeen = MutableStateFlow<Instant?>(null)
+    val lastSeen: StateFlow<Instant?> = _lastSeen.asStateFlow()
+
+    private var presenceJob: kotlinx.coroutines.Job? = null
     private var currentUserId: String = ""
 
     init {
@@ -73,10 +80,11 @@ class ChatDetailViewModel @Inject constructor(
             chatRepository.getMessages(conversationId)
                 .onSuccess { msgList ->
                     _uiState.value = ChatDetailUiState.Success(
-                        messages = msgList.reversed(),
+                        messages = msgList,
                         currentUserId = currentUserId
                     )
                     chatRepository.markAllAsRead(conversationId)
+                    observeTargetUserPresence(targetUserId)
                 }
                 .onFailure { error ->
                     _uiState.value = ChatDetailUiState.Error(
@@ -192,6 +200,7 @@ class ChatDetailViewModel @Inject constructor(
                 messages = currentState.messages + optimisticMsg
             )
         }
+        chatRepository.notifyMessageSent(optimisticMsg)
 
         val request = MessageCreateRequest(
             conversationId = conversationId,
@@ -248,6 +257,32 @@ class ChatDetailViewModel @Inject constructor(
                 pendingQueue.markStatus(clientMsgId, MessageUiStatus.FAILED)
             }
         }
+    }
+
+    private fun observeTargetUserPresence(targetId: String) {
+        if (targetId.isBlank() || presenceJob != null) return
+
+        viewModelScope.launch {
+            chatRepository.getUserPresence(targetId)
+                .onSuccess { event ->
+                    _isUserOnline.value = (event.status == com.example.duralapapp.data.model.UserStatus.ONLINE)
+                    _lastSeen.value = event.lastSeen
+                }
+        }
+
+        presenceJob = viewModelScope.launch {
+            chatRepository.observeUserPresence(targetId)
+                .catch { /* ignore */ }
+                .collect { event ->
+                    _isUserOnline.value = (event.status == com.example.duralapapp.data.model.UserStatus.ONLINE)
+                    _lastSeen.value = event.lastSeen
+                }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        presenceJob?.cancel()
     }
 }
 

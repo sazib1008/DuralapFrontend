@@ -25,11 +25,20 @@ interface CallApi {
         @Query("userId") userId: String
     ): Response<CallResponse>
 
+    @POST("api/calls/{callId}/cancel")
+    suspend fun cancelCall(
+        @Path("callId") callId: String,
+        @Query("userId") userId: String
+    ): Response<CallResponse>
+
     @POST("api/calls/{callId}/end")
     suspend fun endCall(
         @Path("callId") callId: String,
         @Query("userId") userId: String
     ): Response<CallResponse>
+
+    @GET("api/calls/ice-servers")
+    suspend fun getIceServers(): Response<com.example.duralapapp.data.model.CallIceServersResponse>
 
     @GET("api/calls/{callId}")
     suspend fun getCallById(

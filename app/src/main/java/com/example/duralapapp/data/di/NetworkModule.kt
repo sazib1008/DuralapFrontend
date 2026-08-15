@@ -27,8 +27,8 @@ object NetworkModule {
 
 
    
-private const val BASE_URL = "http://10.0.2.2:8080/"    //private const val BASE_URL = "http://10.0.2.2:8080/"
-//    private const val BASE_URL = "http://192.168.0.179:8080/" // আপনার Port সহ
+//private const val BASE_URL = "http://10.0.2.2:8080/"    //private const val BASE_URL = "http://10.0.2.2:8080/"
+    private const val BASE_URL = "http://192.168.0.179:8080/" // আপনার Port সহ
     @Provides
     @Singleton
     fun provideMoshi(): Moshi = Moshi.Builder()
@@ -156,5 +156,11 @@ private const val BASE_URL = "http://10.0.2.2:8080/"    //private const val BASE
     @Singleton
     fun provideCallApi(retrofit: Retrofit): com.example.duralapapp.data.api.CallApi {
         return retrofit.create(com.example.duralapapp.data.api.CallApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun providePresenceApi(retrofit: Retrofit): com.example.duralapapp.data.api.PresenceApi {
+        return retrofit.create(com.example.duralapapp.data.api.PresenceApi::class.java)
     }
 }

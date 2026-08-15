@@ -3,10 +3,11 @@ package com.example.duralapapp.data.repository
 import com.example.duralapapp.data.api.CallApi
 import com.example.duralapapp.data.api.safeApiCall
 import com.example.duralapapp.data.model.CallHistoryItemResponse
+import com.example.duralapapp.data.model.CallIceServersResponse
 import com.example.duralapapp.data.model.CallInitiateRequest
 import com.example.duralapapp.data.model.CallResponse
+import com.example.duralapapp.data.model.CallSignalingMessage
 import com.example.duralapapp.data.model.CallType
-import com.example.duralapapp.data.model.WebRTCSignal
 import com.example.duralapapp.data.websocket.StompWebSocketClient
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.flow.Flow
@@ -19,11 +20,13 @@ interface CallRepository {
     suspend fun initiateCall(conversationId: String, callerId: String, calleeId: String, callType: CallType): Result<CallResponse>
     suspend fun acceptCall(callId: String, userId: String): Result<CallResponse>
     suspend fun rejectCall(callId: String, userId: String): Result<CallResponse>
+    suspend fun cancelCall(callId: String, userId: String): Result<CallResponse>
     suspend fun endCall(callId: String, userId: String): Result<CallResponse>
     suspend fun getCallHistory(userId: String): Result<List<CallHistoryItemResponse>>
+    suspend fun getIceServers(): Result<CallIceServersResponse>
     
-    fun observeUserSignaling(userId: String): Flow<WebRTCSignal>
-    fun sendSignalingEvent(targetUserId: String, signal: WebRTCSignal)
+    fun observeUserSignaling(userId: String): Flow<CallSignalingMessage>
+    fun sendSignalingMessage(message: CallSignalingMessage)
 }
 
 @Singleton
@@ -33,7 +36,7 @@ class CallRepositoryImpl @Inject constructor(
     private val moshi: Moshi
 ) : CallRepository {
 
-    private val rtcAdapter by lazy { moshi.adapter(WebRTCSignal::class.java) }
+    private val signalingAdapter by lazy { moshi.adapter(CallSignalingMessage::class.java) }
 
     override suspend fun initiateCall(
         conversationId: String,
@@ -61,6 +64,10 @@ class CallRepositoryImpl @Inject constructor(
         return safeApiCall { callApi.rejectCall(callId, userId) }
     }
 
+    override suspend fun cancelCall(callId: String, userId: String): Result<CallResponse> {
+        return safeApiCall { callApi.cancelCall(callId, userId) }
+    }
+
     override suspend fun endCall(callId: String, userId: String): Result<CallResponse> {
         return safeApiCall { callApi.endCall(callId, userId) }
     }
@@ -69,24 +76,27 @@ class CallRepositoryImpl @Inject constructor(
         return safeApiCall { callApi.getCallHistoryList(userId) }
     }
 
-    override fun observeUserSignaling(userId: String): Flow<WebRTCSignal> {
+    override suspend fun getIceServers(): Result<CallIceServersResponse> {
+        return safeApiCall { callApi.getIceServers() }
+    }
+
+    override fun observeUserSignaling(userId: String): Flow<CallSignalingMessage> {
         val topic = "/topic/user/$userId/signaling"
         stompClient.subscribe(topic)
 
         return stompClient.messages
-            .filter { it.headers["destination"] == topic }
+            .filter { it.headers["destination"] == topic || it.headers["destination"]?.contains("signaling") == true }
             .mapNotNull { msg ->
                 try {
-                    rtcAdapter.fromJson(msg.payload)
+                    signalingAdapter.fromJson(msg.payload)
                 } catch (e: Exception) {
                     null
                 }
             }
     }
 
-    override fun sendSignalingEvent(targetUserId: String, signal: WebRTCSignal) {
-        val destination = "/topic/user/$targetUserId/signaling"
-        val json = rtcAdapter.toJson(signal)
-        stompClient.send(destination, json)
+    override fun sendSignalingMessage(message: CallSignalingMessage) {
+        val json = signalingAdapter.toJson(message)
+        stompClient.send("/app/call.signal", json)
     }
 }

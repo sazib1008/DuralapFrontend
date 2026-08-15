@@ -20,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -28,8 +27,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.duralapapp.ui.theme.*
-
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.example.duralapapp.data.model.ConversationResponse
@@ -37,6 +36,7 @@ import com.example.duralapapp.data.model.getDisplayName
 import com.example.duralapapp.data.model.getFormattedTime
 import com.example.duralapapp.ui.chat.ChatListUiState
 import com.example.duralapapp.ui.chat.ChatListViewModel
+import com.example.duralapapp.ui.theme.*
 
 data class ChatItem(
     val id: Int,
@@ -54,154 +54,182 @@ fun HomeScreen(
     onOpenSearch: () -> Unit = {},
     onOpenRequests: () -> Unit = {},
     onOpenChat: (conversationId: String, recipientName: String) -> Unit = { _, _ -> },
+    onStartCall: (targetUserId: String, targetUserName: String, conversationId: String, callType: String) -> Unit = { _, _, _, _ -> },
     viewModel: ChatListViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var currentTab by remember { mutableStateOf("Chats") }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshConversations()
+    }
 
     Scaffold(
         containerColor = BgDark,
         topBar = {
-            DuralapTopBar(
-                onOpenProfile = onOpenProfile,
-                onOpenSearch = onOpenSearch,
-                onOpenRequests = onOpenRequests
-            )
+            if (currentTab == "Chats") {
+                DuralapTopBar(
+                    onOpenProfile = onOpenProfile,
+                    onOpenSearch = onOpenSearch,
+                    onOpenRequests = onOpenRequests
+                )
+            }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onOpenSearch,
-                containerColor = PrimaryBlue,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .padding(bottom = 16.dp, end = 8.dp)
-                    .border(2.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ChatBubble,
-                    contentDescription = "New Chat",
-                    modifier = Modifier.size(24.dp)
-                )
+            if (currentTab == "Chats") {
+                FloatingActionButton(
+                    onClick = onOpenSearch,
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .padding(bottom = 16.dp, end = 8.dp)
+                        .border(2.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChatBubble,
+                        contentDescription = "New Chat",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         },
         bottomBar = {
             DuralapBottomNavigation(
+                currentTab = currentTab,
+                onSelectTab = { currentTab = it },
                 onOpenProfile = onOpenProfile,
                 onOpenSearch = onOpenSearch
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 20.dp)
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Text(
-                text = "Recent Chats",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextMain,
-                fontWeight = FontWeight.Bold,
-                fontSize = 22.sp
-            )
+        if (currentTab == "Calls") {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                CallsScreen(onStartCall = onStartCall)
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 20.dp)
+            ) {
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Text(
+                    text = "Recent Chats",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextMain,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-            when (val state = uiState) {
-                is ChatListUiState.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(bottom = 100.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = Color(0xFF818CF8),
-                            strokeWidth = 3.dp
-                        )
-                    }
-                }
-                is ChatListUiState.Empty -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(bottom = 100.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                when (val state = uiState) {
+                    is ChatListUiState.Loading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(bottom = 100.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Outlined.ChatBubbleOutline,
-                                contentDescription = null,
-                                tint = TextMuted,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "No active conversations yet",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = TextMuted
+                            CircularProgressIndicator(
+                                color = Color(0xFF818CF8),
+                                strokeWidth = 3.dp
                             )
                         }
                     }
-                }
-                is ChatListUiState.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(bottom = 100.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = CardBg),
-                            shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.3f)),
-                            modifier = Modifier.fillMaxWidth(0.9f)
+                    is ChatListUiState.Empty -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(bottom = 100.dp),
+                            contentAlignment = Alignment.Center
                         ) {
                             Column(
-                                modifier = Modifier.padding(20.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ErrorOutline,
+                                    imageVector = Icons.Outlined.ChatBubbleOutline,
                                     contentDescription = null,
-                                    tint = Color(0xFFEF4444),
-                                    modifier = Modifier.size(36.dp)
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = state.message,
-                                    color = TextMain,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontSize = 14.sp
+                                    tint = TextMuted,
+                                    modifier = Modifier.size(48.dp)
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = { viewModel.loadConversations() },
-                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                Text(
+                                    text = "No active conversations yet",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = TextMuted
+                                )
+                            }
+                        }
+                    }
+                    is ChatListUiState.Error -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(bottom = 100.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = CardBg),
+                                shape = RoundedCornerShape(16.dp),
+                                border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.3f)),
+                                modifier = Modifier.fillMaxWidth(0.9f)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Text("Retry", color = Color.White)
+                                    Icon(
+                                        imageVector = Icons.Default.ErrorOutline,
+                                        contentDescription = null,
+                                        tint = Color(0xFFEF4444),
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = state.message,
+                                        color = TextMain,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontSize = 14.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(
+                                        onClick = { viewModel.loadConversations() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                    ) {
+                                        Text("Retry", color = Color.White)
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                is ChatListUiState.Success -> {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(bottom = 100.dp)
-                    ) {
-                        items(state.conversations, key = { it.id }) { conversation ->
-                            val recipientName = conversation.getDisplayName(state.currentUserId)
-                            ConversationListItem(
-                                conversation = conversation,
-                                recipientName = recipientName,
-                                onClick = { onOpenChat(conversation.id, recipientName) }
-                            )
+                    is ChatListUiState.Success -> {
+                        val presenceMap by viewModel.presenceMap.collectAsState()
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(bottom = 100.dp)
+                        ) {
+                            items(state.conversations, key = { it.id }) { conversation ->
+                                val recipientName = conversation.getDisplayName(state.currentUserId)
+                                val otherUserId = conversation.participantIds.firstOrNull { it != state.currentUserId }
+                                    ?: conversation.participants?.firstOrNull { it.id != state.currentUserId }?.id
+                                    ?: ""
+                                val isOnline = presenceMap[otherUserId] ?: false
+                                ConversationListItem(
+                                    conversation = conversation,
+                                    recipientName = recipientName,
+                                    isOnline = isOnline,
+                                    onClick = { onOpenChat(conversation.id, recipientName) }
+                                )
+                            }
                         }
                     }
                 }
@@ -209,7 +237,6 @@ fun HomeScreen(
         }
     }
 }
-
 
 @Composable
 fun DuralapTopBar(
@@ -225,7 +252,6 @@ fun DuralapTopBar(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Custom Logo Icon (simplified version of the circles)
             Box(
                 modifier = Modifier.size(24.dp),
                 contentAlignment = Alignment.Center
@@ -288,107 +314,10 @@ fun DuralapTopBar(
 }
 
 @Composable
-fun ChatListItem(chat: ChatItem) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(96.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBg),
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Avatar
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(chat.avatarColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ChatBubble,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.5f),
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Info
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = chat.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextMain,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = chat.time,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (chat.unreadCount > 0) Color(0xFF818CF8) else TextMuted
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = chat.lastMessage,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextMuted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (chat.unreadCount > 0) {
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF818CF8)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = chat.unreadCount.toString(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    } else if (chat.isRead) {
-                        Icon(
-                            imageVector = Icons.Default.DoneAll,
-                            contentDescription = "Read",
-                            tint = TextMuted,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun ConversationListItem(
     conversation: ConversationResponse,
     recipientName: String,
+    isOnline: Boolean = false,
     onClick: () -> Unit
 ) {
     val lastMessageText = conversation.lastMessage?.content ?: "No messages yet"
@@ -425,10 +354,7 @@ fun ConversationListItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar with initial or profile image
-            Box(
-                modifier = Modifier.size(56.dp)
-            ) {
+            Box(modifier = Modifier.size(56.dp)) {
                 if (!profileImageUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = profileImageUrl,
@@ -454,23 +380,21 @@ fun ConversationListItem(
                     }
                 }
 
-                // Online indicator dot
-                Box(
-                    modifier = Modifier
-                        .size(14.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF22C55E))
-                        .align(Alignment.BottomEnd)
-                        .border(2.dp, CardBg, CircleShape)
-                )
+                if (isOnline) {
+                    Box(
+                        modifier = Modifier
+                            .size(14.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF22C55E))
+                            .align(Alignment.BottomEnd)
+                            .border(2.dp, CardBg, CircleShape)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Info
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -535,9 +459,10 @@ fun ConversationListItem(
     }
 }
 
-
 @Composable
 fun DuralapBottomNavigation(
+    currentTab: String = "Chats",
+    onSelectTab: (String) -> Unit = {},
     onOpenProfile: () -> Unit = {},
     onOpenSearch: () -> Unit = {}
 ) {
@@ -558,12 +483,14 @@ fun DuralapBottomNavigation(
             BottomNavItem(
                 icon = Icons.Default.ChatBubble,
                 label = "Chats",
-                isSelected = true
+                isSelected = currentTab == "Chats",
+                onClick = { onSelectTab("Chats") }
             )
             BottomNavItem(
                 icon = Icons.Outlined.Phone,
                 label = "Calls",
-                isSelected = false
+                isSelected = currentTab == "Calls",
+                onClick = { onSelectTab("Calls") }
             )
             BottomNavItem(
                 icon = Icons.Outlined.Contacts,

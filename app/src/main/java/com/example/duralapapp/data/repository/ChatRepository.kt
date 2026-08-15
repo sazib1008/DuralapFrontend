@@ -7,12 +7,18 @@ import com.example.duralapapp.data.model.*
 import com.example.duralapapp.data.websocket.StompWebSocketClient
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.mapNotNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
 interface ChatRepository {
+    val localMessageUpdates: SharedFlow<MessageResponse>
+    fun notifyMessageSent(message: MessageResponse)
+
     suspend fun getMyConversations(): Result<List<ConversationResponse>>
     suspend fun getConversationById(id: String): Result<ConversationResponse>
     suspend fun getMessages(conversationId: String, page: Int = 0, size: Int = 30): Result<List<MessageResponse>>
@@ -27,8 +33,12 @@ interface ChatRepository {
 
     fun observeConversationMessages(conversationId: String): Flow<MessageResponse>
     fun observeUserMessages(userId: String): Flow<MessageResponse>
+    fun observeConversationUpdates(userId: String): Flow<ConversationUpdatedEvent>
     fun observeMessageStatusUpdates(conversationId: String): Flow<MessageStatusUpdatedEvent>
     fun observeUserStatusUpdates(userId: String): Flow<MessageStatusUpdatedEvent>
+    fun observeUserPresence(userId: String): Flow<UserPresenceEvent>
+    suspend fun getUserPresence(userId: String): Result<UserPresenceEvent>
+    suspend fun getBatchPresence(userIds: List<String>): Result<List<UserPresenceEvent>>
     fun connectWebSocket(token: String)
     fun disconnectWebSocket()
 }
@@ -37,12 +47,22 @@ interface ChatRepository {
 class ChatRepositoryImpl @Inject constructor(
     private val conversationApi: ConversationApi,
     private val messageApi: MessageApi,
+    private val presenceApi: com.example.duralapapp.data.api.PresenceApi,
     private val stompClient: StompWebSocketClient,
     private val moshi: Moshi
 ) : ChatRepository {
 
+    private val _localMessageUpdates = MutableSharedFlow<MessageResponse>(extraBufferCapacity = 64)
+    override val localMessageUpdates: SharedFlow<MessageResponse> = _localMessageUpdates.asSharedFlow()
+
+    override fun notifyMessageSent(message: MessageResponse) {
+        _localMessageUpdates.tryEmit(message)
+    }
+
     private val messageAdapter by lazy { moshi.adapter(MessageResponse::class.java) }
+    private val conversationUpdateAdapter by lazy { moshi.adapter(ConversationUpdatedEvent::class.java) }
     private val statusEventAdapter by lazy { moshi.adapter(MessageStatusUpdatedEvent::class.java) }
+    private val presenceAdapter by lazy { moshi.adapter(UserPresenceEvent::class.java) }
     private val ackAdapter by lazy { moshi.adapter(MessageStatusUpdateRequest::class.java) }
 
     override suspend fun getMyConversations(): Result<List<ConversationResponse>> {
@@ -76,7 +96,7 @@ class ChatRepositoryImpl @Inject constructor(
         content: String,
         clientMsgId: String
     ): Result<MessageResponse> {
-        return safeApiCall {
+        val result = safeApiCall {
             messageApi.sendMessage(
                 MessageCreateRequest(
                     conversationId = conversationId,
@@ -86,6 +106,10 @@ class ChatRepositoryImpl @Inject constructor(
                 )
             )
         }
+        result.onSuccess { msg ->
+            _localMessageUpdates.tryEmit(msg)
+        }
+        return result
     }
 
     override suspend fun syncMessages(sinceIso: String?): Result<List<MessageResponse>> {
@@ -121,6 +145,7 @@ class ChatRepositoryImpl @Inject constructor(
                     val parsed = messageAdapter.fromJson(msg.payload)
                     if (parsed != null) {
                         android.util.Log.d("DEBUG_STOMP", "[2] Repository emitted message | ConversationId: ${parsed.conversationId} | MessageId: ${parsed.id} | Content: ${parsed.content}")
+                        _localMessageUpdates.tryEmit(parsed)
                     }
                     parsed
                 } catch (e: Exception) {
@@ -138,8 +163,28 @@ class ChatRepositoryImpl @Inject constructor(
             .filter { it.headers["destination"] == destination }
             .mapNotNull { msg ->
                 try {
-                    messageAdapter.fromJson(msg.payload)
+                    val parsed = messageAdapter.fromJson(msg.payload)
+                    if (parsed != null) {
+                        _localMessageUpdates.tryEmit(parsed)
+                    }
+                    parsed
                 } catch (e: Exception) {
+                    null
+                }
+            }
+    }
+
+    override fun observeConversationUpdates(userId: String): Flow<ConversationUpdatedEvent> {
+        val destination = "/user/$userId/queue/conversations"
+        stompClient.subscribe(destination)
+
+        return stompClient.messages
+            .filter { it.headers["destination"] == destination }
+            .mapNotNull { msg ->
+                try {
+                    conversationUpdateAdapter.fromJson(msg.payload)
+                } catch (e: Exception) {
+                    android.util.Log.e("ChatRepositoryImpl", "Failed to deserialize conversation update for destination: $destination", e)
                     null
                 }
             }
@@ -173,6 +218,29 @@ class ChatRepositoryImpl @Inject constructor(
                     null
                 }
             }
+    }
+
+    override fun observeUserPresence(userId: String): Flow<UserPresenceEvent> {
+        val topic = "/topic/presence/$userId"
+        stompClient.subscribe(topic)
+
+        return stompClient.messages
+            .filter { it.headers["destination"] == topic }
+            .mapNotNull { msg ->
+                try {
+                    presenceAdapter.fromJson(msg.payload)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+    }
+
+    override suspend fun getUserPresence(userId: String): Result<UserPresenceEvent> {
+        return safeApiCall { presenceApi.getUserPresence(userId) }
+    }
+
+    override suspend fun getBatchPresence(userIds: List<String>): Result<List<UserPresenceEvent>> {
+        return safeApiCall { presenceApi.getBatchPresence(com.example.duralapapp.data.model.BatchPresenceRequest(userIds)) }
     }
 
     override fun connectWebSocket(token: String) {

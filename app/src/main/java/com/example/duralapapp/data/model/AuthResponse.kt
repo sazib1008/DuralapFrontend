@@ -145,3 +145,23 @@ data class UserUpdateRequest(
     @Json(name = "roles")
     val roles: Set<Role>? = null
 )
+
+@JsonClass(generateAdapter = true)
+data class UserPresenceEvent(
+    @Json(name = "userId")
+    val userId: String,
+    @Json(name = "status")
+    val status: UserStatus,
+    @Json(name = "lastSeen")
+    val lastSeen: Instant? = null,
+    @Json(name = "sessionCount")
+    val sessionCount: Int = 0,
+    @Json(name = "timestamp")
+    val timestamp: Instant? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class BatchPresenceRequest(
+    @Json(name = "userIds")
+    val userIds: List<String>
+)

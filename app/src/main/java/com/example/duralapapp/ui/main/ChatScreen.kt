@@ -98,7 +98,7 @@ fun ChatScreen(
 }
 
 @Composable
-fun ChatTopBar(onBack: () -> Unit) {
+fun ChatTopBar(isOnline: Boolean = false, onBack: () -> Unit) {
     Surface(
         color = BgDark.copy(alpha = 0.9f),
         modifier = Modifier.fillMaxWidth()
@@ -124,21 +124,23 @@ fun ChatTopBar(onBack: () -> Unit) {
                 ) {
                     Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = TextMuted)
                 }
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF22C55E))
-                        .align(Alignment.BottomEnd)
-                        .border(2.dp, BgDark, CircleShape)
-                )
+                if (isOnline) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF22C55E))
+                            .align(Alignment.BottomEnd)
+                            .border(2.dp, BgDark, CircleShape)
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.width(12.dp))
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = "Alex Rivera", color = TextMain, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(text = "Online", color = TextMuted, fontSize = 12.sp)
+                Text(text = if (isOnline) "Online" else "Offline", color = TextMuted, fontSize = 12.sp)
             }
             
             IconButton(onClick = { /* Call */ }) {

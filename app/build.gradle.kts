@@ -105,6 +105,9 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
+    // WebRTC Engine (Modern maintained WebRTC build for Android & Compose)
+    implementation("io.getstream:stream-webrtc-android:1.3.10")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

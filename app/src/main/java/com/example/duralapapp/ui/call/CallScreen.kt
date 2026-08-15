@@ -1,6 +1,8 @@
 package com.example.duralapapp.ui.call
 
-import androidx.compose.foundation.BorderStroke
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -23,9 +25,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.duralapapp.data.call.CallState
 import com.example.duralapapp.data.model.CallType
 import com.example.duralapapp.ui.theme.*
+import org.webrtc.RendererCommon
+import org.webrtc.SurfaceViewRenderer
 import kotlin.math.roundToInt
 
 @Composable
@@ -33,20 +39,28 @@ fun CallScreen(
     onBackClick: () -> Unit,
     viewModel: CallViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val isMuted by viewModel.isMuted.collectAsState()
-    val isVideoEnabled by viewModel.isVideoEnabled.collectAsState()
-    val isSpeakerOn by viewModel.isSpeakerOn.collectAsState()
-    val isFrontCamera by viewModel.isFrontCamera.collectAsState()
+    val callState by viewModel.callState.collectAsState()
 
     var pipOffsetX by remember { mutableFloatStateOf(0f) }
     var pipOffsetY by remember { mutableFloatStateOf(0f) }
-    var showPermissionRationale by remember { mutableStateOf(false) }
 
     val haptics = LocalHapticFeedback.current
 
-    LaunchedEffect(uiState) {
-        if (uiState is CallUiState.Ended) {
+    // Request permissions on entry
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { /* permissions result handled by system */ }
+
+    LaunchedEffect(Unit) {
+        val permissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
+        if (viewModel.initialCallTypeStr == "VIDEO") {
+            permissions.add(Manifest.permission.CAMERA)
+        }
+        permissionLauncher.launch(permissions.toTypedArray())
+    }
+
+    LaunchedEffect(callState) {
+        if (callState is CallState.Ended) {
             kotlinx.coroutines.delay(1500)
             onBackClick()
         }
@@ -57,24 +71,31 @@ fun CallScreen(
             .fillMaxSize()
             .background(BgDark)
     ) {
-        // Main Viewport (Video preview or Avatar)
-        when (val state = uiState) {
-            is CallUiState.OutgoingRinging -> {
-                CallRingingView(name = state.recipientName, status = "Ringing...")
+        when (val state = callState) {
+            is CallState.OutgoingRinging -> {
+                CallRingingView(name = state.contactName, status = "Ringing...")
             }
-            is CallUiState.IncomingRinging -> {
+            is CallState.IncomingRinging -> {
                 CallRingingView(name = state.callerName, status = "Incoming call...")
             }
-            is CallUiState.Connected -> {
-                if (isVideoEnabled) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFF1E293B)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Remote Video Stream", color = TextMuted, fontSize = 16.sp)
-                    }
+            is CallState.Connecting -> {
+                CallRingingView(name = state.contactName, status = "Connecting WebRTC...")
+            }
+            is CallState.Connected -> {
+                if (state.callType == CallType.VIDEO && state.isVideoEnabled) {
+                    // Remote Fullscreen Video
+                    AndroidView(
+                        factory = { ctx ->
+                            SurfaceViewRenderer(ctx).apply {
+                                setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL)
+                                setMirror(false)
+                                viewModel.initRemoteRenderer(this)
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    // Local PIP Draggable Video
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -90,56 +111,57 @@ fun CallScreen(
                             .size(width = 110.dp, height = 160.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(CardBg)
-                            .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(16.dp)),
-                        contentAlignment = Alignment.Center
+                            .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                     ) {
-                        Text("Self Video", color = TextMuted, fontSize = 12.sp)
+                        AndroidView(
+                            factory = { ctx ->
+                                SurfaceViewRenderer(ctx).apply {
+                                    setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL)
+                                    setMirror(state.isFrontCamera)
+                                    viewModel.initLocalRenderer(this)
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    // Duration overlay in top left
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(top = 48.dp, start = 20.dp),
+                        color = Color.Black.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = formatDuration(state.durationSeconds),
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
                     }
                 } else {
                     CallRingingView(
-                        name = state.recipientName,
+                        name = state.contactName,
                         status = formatDuration(state.durationSeconds)
                     )
                 }
             }
-            is CallUiState.Ended -> {
+            is CallState.Ended -> {
                 CallRingingView(name = viewModel.targetUserName, status = state.reason)
             }
-            is CallUiState.Idle -> {
+            is CallState.Idle -> {
                 CallRingingView(name = viewModel.targetUserName, status = "Connecting...")
             }
         }
 
-        if (showPermissionRationale) {
-            AlertDialog(
-                onDismissRequest = { showPermissionRationale = false },
-                title = { Text("Call Permissions Needed", color = TextMain, fontWeight = FontWeight.Bold) },
-                text = {
-                    Text(
-                        "Duralap requires Camera and Microphone permissions to establish real-time audio and video calls with your contact.",
-                        color = TextMuted
-                    )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = { showPermissionRationale = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                    ) {
-                        Text("Grant", color = Color.White)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showPermissionRationale = false }) {
-                        Text("Cancel", color = TextMuted)
-                    }
-                },
-                containerColor = CardBg,
-                shape = RoundedCornerShape(24.dp)
-            )
-        }
-
         // Control Bar at Bottom
-        if (uiState !is CallUiState.Ended) {
+        if (callState !is CallState.Ended) {
+            val isMuted = (callState as? CallState.Connected)?.isAudioMuted ?: false
+            val isVideoOn = (callState as? CallState.Connected)?.isVideoEnabled ?: (viewModel.initialCallTypeStr == "VIDEO")
+            val isSpeakerOn = (callState as? CallState.Connected)?.isSpeakerphoneOn ?: (viewModel.initialCallTypeStr == "VIDEO")
+
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -165,8 +187,8 @@ fun CallScreen(
                     )
 
                     CallControlButton(
-                        icon = if (isVideoEnabled) Icons.Default.Videocam else Icons.Default.VideocamOff,
-                        isActive = !isVideoEnabled,
+                        icon = if (isVideoOn) Icons.Default.Videocam else Icons.Default.VideocamOff,
+                        isActive = !isVideoOn,
                         onClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             viewModel.toggleVideo()
@@ -187,7 +209,7 @@ fun CallScreen(
                         isActive = false,
                         onClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.toggleCamera()
+                            viewModel.switchCamera()
                         }
                     )
 

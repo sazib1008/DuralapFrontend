@@ -44,6 +44,24 @@ data class GetOrCreateConversationRequest(
 )
 
 @JsonClass(generateAdapter = true)
+data class ConversationUpdatedEvent(
+    @Json(name = "conversationId")
+    val conversationId: String,
+    @Json(name = "lastMessageId")
+    val lastMessageId: String? = null,
+    @Json(name = "lastMessageSenderId")
+    val lastMessageSenderId: String? = null,
+    @Json(name = "lastMessageContent")
+    val lastMessageContent: String,
+    @Json(name = "lastMessageType")
+    val lastMessageType: MessageType? = MessageType.TEXT,
+    @Json(name = "lastMessageAt")
+    val lastMessageAt: Instant,
+    @Json(name = "participantIds")
+    val participantIds: Set<String> = emptySet()
+)
+
+@JsonClass(generateAdapter = true)
 data class StartConversationRequest(
     @Json(name = "targetUserId")
     val targetUserId: String,

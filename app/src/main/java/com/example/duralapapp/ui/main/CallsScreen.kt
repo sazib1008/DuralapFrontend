@@ -3,6 +3,7 @@ package com.example.duralapapp.ui.main
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,9 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Contacts
-import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,62 +19,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.AsyncImage
+import com.example.duralapapp.data.model.CallHistoryItemResponse
+import com.example.duralapapp.data.model.CallStatus
 import com.example.duralapapp.data.model.CallType
 import com.example.duralapapp.ui.theme.*
-
-data class CallRecord(
-    val id: Int,
-    val name: String,
-    val type: CallMediaType,
-    val direction: CallDirection,
-    val time: String,
-    val avatarColor: Color = Color(0xFF1E293B)
-)
-
-enum class CallMediaType {
-    VOICE, VIDEO
-}
-
-enum class CallDirection {
-    INCOMING, OUTGOING, MISSED
-}
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun CallsScreen(
+    onStartCall: (targetUserId: String, targetUserName: String, conversationId: String, callType: String) -> Unit = { _, _, _, _ -> },
     viewModel: CallsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var selectedTab by remember { mutableIntStateOf(0) } // 0 = All, 1 = Missed
 
     Scaffold(
         containerColor = BgDark,
         topBar = {
             CallsTopBar()
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { /* New Call */ },
-                containerColor = PrimaryBlue,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .padding(bottom = 16.dp, end = 8.dp)
-                    .border(2.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Call,
-                    contentDescription = "New Call",
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        },
-        bottomBar = {
-            DuralapBottomNavigation(currentTab = "Calls")
         }
     ) { innerPadding ->
         Column(
@@ -85,7 +53,7 @@ fun CallsScreen(
                 .padding(horizontal = 20.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Segmented Control
             Row(
                 modifier = Modifier
@@ -95,29 +63,43 @@ fun CallsScreen(
                     .padding(4.dp)
             ) {
                 Surface(
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                    color = PrimaryBlue,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { selectedTab = 0 },
+                    color = if (selectedTab == 0) PrimaryBlue else Color.Transparent,
                     shape = RoundedCornerShape(20.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(text = "All", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "All",
+                            color = if (selectedTab == 0) Color.White else TextMuted,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
                 Surface(
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                    color = Color.Transparent,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { selectedTab = 1 },
+                    color = if (selectedTab == 1) PrimaryBlue else Color.Transparent,
                     shape = RoundedCornerShape(20.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(text = "Missed", color = TextMuted)
+                        Text(
+                            text = "Missed",
+                            color = if (selectedTab == 1) Color.White else TextMuted,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-            
+            Spacer(modifier = Modifier.height(24.dp))
+
             Text(
-                text = "RECENT CALLS",
+                text = if (selectedTab == 0) "RECENT CALLS" else "MISSED CALLS",
                 style = MaterialTheme.typography.labelMedium,
                 color = TextMuted,
                 letterSpacing = 1.sp
@@ -132,7 +114,13 @@ fun CallsScreen(
                     }
                 }
                 is CallsUiState.Success -> {
-                    if (state.calls.isEmpty()) {
+                    val filteredCalls = if (selectedTab == 1) {
+                        state.calls.filter { it.status == CallStatus.MISSED }
+                    } else {
+                        state.calls
+                    }
+
+                    if (filteredCalls.isEmpty()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -148,7 +136,7 @@ fun CallsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = "No Recent Calls",
+                                    text = if (selectedTab == 1) "No Missed Calls" else "No Recent Calls",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = TextMain,
                                     fontWeight = FontWeight.Bold
@@ -166,16 +154,16 @@ fun CallsScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             contentPadding = PaddingValues(bottom = 100.dp)
                         ) {
-                            items(state.calls, key = { it.id }) { callResp ->
-                                val mediaType = if (callResp.callType == CallType.VIDEO) CallMediaType.VIDEO else CallMediaType.VOICE
-                                val record = CallRecord(
-                                    id = callResp.id.hashCode(),
-                                    name = callResp.callerId,
-                                    type = mediaType,
-                                    direction = CallDirection.INCOMING,
-                                    time = callResp.status.name
+                            items(filteredCalls, key = { it.id }) { callItem ->
+                                CallHistoryRowItem(
+                                    call = callItem,
+                                    onCallBack = {
+                                        val otherId = if (callItem.isIncoming) callItem.callerId else callItem.calleeId
+                                        val name = callItem.otherUser?.fullName?.takeIf { it.isNotBlank() }
+                                            ?: callItem.otherUser?.username ?: otherId
+                                        onStartCall(otherId, name, callItem.conversationId, callItem.callType.name)
+                                    }
                                 )
-                                CallListItem(record)
                             }
                         }
                     }
@@ -224,131 +212,127 @@ fun CallsTopBar() {
             fontWeight = FontWeight.Bold,
             fontSize = 24.sp
         )
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { /* Search */ }) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = TextMuted,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF1E293B))
-                    .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Profile",
-                    tint = TextMuted,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
     }
 }
 
 @Composable
-fun CallListItem(call: CallRecord) {
+fun CallHistoryRowItem(
+    call: CallHistoryItemResponse,
+    onCallBack: () -> Unit
+) {
+    val isMissed = call.status == CallStatus.MISSED
+    val displayName = call.otherUser?.fullName?.takeIf { it.isNotBlank() }
+        ?: call.otherUser?.username
+        ?: if (call.isIncoming) call.callerId else call.calleeId
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(96.dp),
+            .height(88.dp),
         colors = CardDefaults.cardColors(containerColor = CardBg),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar with type badge
-            Box(modifier = Modifier.size(56.dp)) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(call.avatarColor),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.5f),
-                        modifier = Modifier.size(28.dp)
+            // Avatar with Call Type Badge
+            Box(modifier = Modifier.size(52.dp)) {
+                if (!call.otherUser?.profileImageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = call.otherUser!!.profileImageUrl,
+                        contentDescription = displayName,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(Color(0xFF1E293B)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
                 }
+
                 Box(
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(18.dp)
                         .clip(CircleShape)
-                        .background(PrimaryBlue)
+                        .background(if (call.callType == CallType.VIDEO) PrimaryBlue else Color(0xFF10B981))
                         .align(Alignment.BottomEnd)
                         .border(2.dp, CardBg, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (call.type == CallMediaType.VIDEO) Icons.Default.Videocam else Icons.Default.Call,
+                        imageVector = if (call.callType == CallType.VIDEO) Icons.Default.Videocam else Icons.Default.Call,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(12.dp)
+                        modifier = Modifier.size(10.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
-            // Info
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            // Contact Name & Status/Timestamp
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = call.name,
+                    text = displayName,
                     style = MaterialTheme.typography.titleMedium,
-                    color = if (call.direction == CallDirection.MISSED) Color(0xFFF87171) else TextMain,
+                    color = if (isMissed) Color(0xFFF87171) else TextMain,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = when(call.direction) {
-                            CallDirection.INCOMING -> Icons.Default.CallReceived
-                            CallDirection.OUTGOING -> Icons.Default.CallMade
-                            CallDirection.MISSED -> Icons.Default.CallMissed
+                        imageVector = when {
+                            isMissed -> Icons.Default.CallMissed
+                            call.isIncoming -> Icons.Default.CallReceived
+                            else -> Icons.Default.CallMade
                         },
                         contentDescription = null,
-                        tint = if (call.direction == CallDirection.MISSED) Color(0xFFF87171) else TextMuted,
+                        tint = if (isMissed) Color(0xFFF87171) else if (call.isIncoming) Color(0xFF10B981) else TextMuted,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
+
+                    val timeFormatted = formatTimestamp(call.createdAt)
+                    val durationText = if (call.duration != null && call.duration > 0) {
+                        " • ${call.duration / 60}m ${call.duration % 60}s"
+                    } else ""
+
                     Text(
-                        text = "${call.direction.name.lowercase().replaceFirstChar { it.uppercase() }} • ${call.time}",
+                        text = "$timeFormatted$durationText",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextMuted
                     )
                 }
             }
 
-            // Action Button
+            // Call Back Icon Button
             IconButton(
-                onClick = { /* Call Back */ },
+                onClick = onCallBack,
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(42.dp)
                     .background(Color(0xFF1E293B), CircleShape)
                     .border(1.dp, Color.White.copy(alpha = 0.05f), CircleShape)
             ) {
                 Icon(
-                    imageVector = if (call.type == CallMediaType.VIDEO) Icons.Default.Videocam else Icons.Default.Call,
-                    contentDescription = "Call",
-                    tint = TextMuted,
+                    imageVector = if (call.callType == CallType.VIDEO) Icons.Default.Videocam else Icons.Default.Call,
+                    contentDescription = "Call Back",
+                    tint = PrimaryBlue,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -356,50 +340,11 @@ fun CallListItem(call: CallRecord) {
     }
 }
 
-@Composable
-fun DuralapBottomNavigation(currentTab: String) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp),
-        color = BgDark,
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomNavItem(
-                icon = Icons.Default.ChatBubble,
-                label = "Chats",
-                isSelected = currentTab == "Chats"
-            )
-            BottomNavItem(
-                icon = Icons.Default.Call,
-                label = "Calls",
-                isSelected = currentTab == "Calls"
-            )
-            BottomNavItem(
-                icon = Icons.Default.Contacts,
-                label = "Contacts",
-                isSelected = currentTab == "Contacts"
-            )
-            BottomNavItem(
-                icon = Icons.Default.Settings,
-                label = "Settings",
-                isSelected = currentTab == "Settings"
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF0B0E14)
-@Composable
-fun CallsScreenPreview() {
-    DuralapAppTheme {
-        CallsScreen()
+private fun formatTimestamp(instant: Instant): String {
+    return try {
+        val formatter = DateTimeFormatter.ofPattern("MMM d, HH:mm").withZone(ZoneId.systemDefault())
+        formatter.format(instant)
+    } catch (e: Exception) {
+        "Recent"
     }
 }

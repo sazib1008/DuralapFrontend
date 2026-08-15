@@ -16,20 +16,28 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.duralapapp.data.call.CallManager
+import com.example.duralapapp.data.call.CallState
 import com.example.duralapapp.data.local.AuthEventBus
 import com.example.duralapapp.data.local.OfflineUiBus
 import com.example.duralapapp.data.model.AuthEvent
 import com.example.duralapapp.ui.common.OfflineScreen
 import com.example.duralapapp.ui.login.LoginScreen
 import com.example.duralapapp.ui.main.HomeScreen
+import com.example.duralapapp.ui.main.IncomingCallScreen
 import com.example.duralapapp.ui.main.ProfileScreen
 import com.example.duralapapp.ui.splash.Destination
 import com.example.duralapapp.ui.splash.SplashScreen
 import com.example.duralapapp.ui.theme.DuralapAppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var callManager: CallManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -52,6 +60,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val showOffline by OfflineUiBus.visible.collectAsStateWithLifecycle()
+                val callState by callManager.callState.collectAsStateWithLifecycle()
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     NavHost(
@@ -100,6 +109,11 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(
                                         Destination.ChatDetail.createRoute(conversationId, recipientName)
                                     )
+                                },
+                                onStartCall = { targetUserId, targetUserName, conversationId, callType ->
+                                    navController.navigate(
+                                        Destination.Call.createRoute(targetUserId, targetUserName, conversationId, callType)
+                                    )
                                 }
                             )
                         }
@@ -133,6 +147,29 @@ class MainActivity : ComponentActivity() {
                                 onBackClick = { navController.popBackStack() }
                             )
                         }
+                    }
+
+                    // Global Incoming Call Overlay across all screens
+                    val incomingState = callState as? CallState.IncomingRinging
+                    if (incomingState != null) {
+                        IncomingCallScreen(
+                            name = incomingState.callerName,
+                            status = "Incoming ${incomingState.callType.name.lowercase()} call...",
+                            onAccept = {
+                                callManager.acceptCall()
+                                navController.navigate(
+                                    Destination.Call.createRoute(
+                                        targetUserId = incomingState.callerId,
+                                        targetUserName = incomingState.callerName,
+                                        conversationId = incomingState.conversationId,
+                                        callType = incomingState.callType.name
+                                    )
+                                )
+                            },
+                            onDecline = {
+                                callManager.rejectCall()
+                            }
+                        )
                     }
 
                     if (showOffline) {
